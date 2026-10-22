@@ -18,5 +18,5 @@ Anyone may replace them with a build of their own from the recipe above.
 Use it from Gradle as a Maven repository pinned to a commit of this repository:
 
 ```kotlin
-maven("https://raw.githubusercontent.com/yonto-app/libvlc-lgpl/<commit>/maven")
+maven("https://raw.githubusercontent.com/kangzj/libvlc-lgpl/<commit>/maven")
 ```
