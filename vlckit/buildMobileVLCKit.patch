@@ -1,0 +1,71 @@
+diff --git a/buildMobileVLCKit.sh b/buildMobileVLCKit.sh
+index db20d0c..66b7f69 100755
+--- a/buildMobileVLCKit.sh
++++ b/buildMobileVLCKit.sh
+@@ -9,7 +9,7 @@ BUILD_SIMULATOR=yes
+ BUILD_DYNAMIC_FRAMEWORK=no
+ BUILD_ARCH=`uname -m | cut -d. -f1`
+ SDK_VERSION=`xcrun --sdk iphoneos --show-sdk-version`
+-SDK_MIN=9.0
++SDK_MIN=16.0
+ VERBOSE=no
+ DEBUG=no
+ CONFIGURATION="Release"
+@@ -111,7 +111,7 @@ do
+              IOS=no
+              BITCODE=no
+              SDK_VERSION=`xcrun --sdk macosx --show-sdk-version`
+-             SDK_MIN=10.9
++             SDK_MIN=13.0
+              OSVERSIONMINCFLAG=mmacosx
+              OSVERSIONMINLDFLAG=macos
+              BUILD_DEVICE=yes
+@@ -276,6 +276,12 @@ buildxcodeproj()
+         defs="$defs NOSCARYCODECS"
+     fi
+ 
++    # libbluray finds a disc's mount point through DiskArbitration on the Mac, which the project does not link.
++    local ldflags='$(inherited)'
++    if [ "$MACOS" = "yes" ]; then
++        ldflags="$ldflags -framework DiskArbitration"
++    fi
++
+     xcodebuild archive \
+                -project "$1.xcodeproj" \
+                -sdk $PLATFORM$SDK \
+@@ -284,6 +290,8 @@ buildxcodeproj()
+                -archivePath build/"$target"-$PLATFORM$SDK.xcarchive \
+                ARCHS="${architectures}" \
+                IPHONEOS_DEPLOYMENT_TARGET=${SDK_MIN} \
++               MACOSX_DEPLOYMENT_TARGET=${SDK_MIN} \
++               OTHER_LDFLAGS="$ldflags" \
+                ${bitcodeflag} \
+                SKIP_INSTALL=no \
+                > ${out}
+@@ -473,7 +481,7 @@ buildLibVLC() {
+         CUSTOMOSOPTIONS="--disable-libarchive"
+     fi
+     if [ "$MACOS" = "yes" ]; then
+-        CUSTOMOSOPTIONS="--disable-fontconfig --disable-bghudappkit --disable-twolame --disable-microdns --disable-SDL --disable-SDL_image --disable-cddb --disable-bluray"
++        CUSTOMOSOPTIONS="--disable-fontconfig --disable-bghudappkit --disable-twolame --disable-microdns --disable-SDL --disable-SDL_image --disable-cddb"
+     fi
+     if [ "$IOS" = "yes" ]; then
+         CUSTOMOSOPTIONS=""
+@@ -542,7 +550,7 @@ buildLibVLC() {
+     ../bootstrap --build=${BUILD_TRIPLET} --host=${HOST_TRIPLET} --prefix=${VLCROOT}/contrib/${OSSTYLE}${PLATFORM_IDENTIFIER}-${HOST_TRIPLET}-${ARCH} --disable-gpl \
+         --enable-ad-clauses \
+         --disable-gnuv3 \
+-        --disable-disc \
++        --disable-disc --enable-bluray \
+         --disable-sdl \
+         --disable-SDL_image \
+         --disable-iconv \
+@@ -685,7 +693,7 @@ buildLibVLC() {
+         --disable-goom \
+         --disable-dvdread \
+         --disable-dvdnav \
+-        --disable-bluray \
++        --enable-bluray \
+         --disable-linsys \
+         --disable-libva \
+         --disable-gme \

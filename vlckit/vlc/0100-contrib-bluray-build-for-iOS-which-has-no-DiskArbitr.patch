@@ -1,0 +1,68 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jasper Kang <kangzjnet@gmail.com>
+Date: Sun, 25 Oct 2026 04:34:45 +1300
+Subject: [PATCH] contrib: bluray: build for iOS, which has no DiskArbitration
+
+libbluray links DiskArbitration on every Darwin, but it only finds the mount point of a disc in a drive, and iOS does not have it.
+---
+ ...for-iOS-which-has-no-DiskArbitration.patch | 38 +++++++++++++++++++
+ contrib/src/bluray/rules.mak                  |  1 +
+ 2 files changed, 39 insertions(+)
+ create mode 100644 contrib/src/bluray/0002-Build-for-iOS-which-has-no-DiskArbitration.patch
+
+diff --git a/contrib/src/bluray/0002-Build-for-iOS-which-has-no-DiskArbitration.patch b/contrib/src/bluray/0002-Build-for-iOS-which-has-no-DiskArbitration.patch
+new file mode 100644
+index 0000000000..fa2a541350
+--- /dev/null
++++ b/contrib/src/bluray/0002-Build-for-iOS-which-has-no-DiskArbitration.patch
+@@ -0,0 +1,38 @@
++From: Jasper Kang <kangzjnet@gmail.com>
++Subject: [PATCH] Build for iOS, which has no DiskArbitration
++
++DiskArbitration only finds the mount point of a disc in a drive, so without
++it a disc image or folder still opens, through the generic mount.c.
++---
++ meson.build     | 4 +++-
++ src/meson.build | 2 +-
++ 2 files changed, 4 insertions(+), 2 deletions(-)
++
++diff --git a/meson.build b/meson.build
++--- a/meson.build
+++++ b/meson.build
++@@ -51,8 +51,10 @@
++ endif
++
++ if host_machine.system() == 'darwin'
+++    # iOS has no DiskArbitration, which only finds the mount point of a disc in a drive.
+++    have_diskarbitration = cc.has_header('DiskArbitration/DADisk.h')
++     extra_dependencies += dependency('appleframeworks',
++-        modules: ['CoreFoundation', 'DiskArbitration'])
+++        modules: have_diskarbitration ? ['CoreFoundation', 'DiskArbitration'] : ['CoreFoundation'])
++ elif host_machine.system() == 'netbsd'
++     test_args += '-D_NETBSD_SOURCE'
++ elif host_machine.system() == 'openbsd'
++diff --git a/src/meson.build b/src/meson.build
++--- a/src/meson.build
+++++ b/src/meson.build
++@@ -71,8 +71,8 @@
++         'file/dirs_darwin.c',
++         'file/dl_posix.c',
++         'file/file_posix.c',
++-        'file/mount_darwin.c',
++     )
+++    libbluray_src += files(have_diskarbitration ? 'file/mount_darwin.c' : 'file/mount.c')
++ else
++     libbluray_src += files(
++         'file/dir_posix.c',
+diff --git a/contrib/src/bluray/rules.mak b/contrib/src/bluray/rules.mak
+index 7ccc7e3c8c..04a30556e9 100644
+--- a/contrib/src/bluray/rules.mak
++++ b/contrib/src/bluray/rules.mak
+@@ -47,6 +47,7 @@ $(TARBALLS)/libbluray-$(BLURAY_VERSION).tar.xz:
+ bluray: libbluray-$(BLURAY_VERSION).tar.xz .sum-bluray
+ 	$(UNPACK)
+ 	$(APPLY) $(SRC)/bluray/0001-Link-with-gdi32-when-using-freetype-in-Windows.patch
++	$(APPLY) $(SRC)/bluray/0002-Build-for-iOS-which-has-no-DiskArbitration.patch
+ 	$(MOVE)
+ 
+ .bluray: bluray crossfile.meson
