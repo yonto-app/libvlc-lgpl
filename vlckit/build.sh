@@ -1,9 +1,10 @@
 #!/bin/sh
-# Builds the VLCKit the iOS and Mac apps ship: VideoLAN's own VLCKit and libVLC sources at the version
+# Builds the VLCKit the iOS, Apple TV and Mac apps ship: VideoLAN's own VLCKit and libVLC sources at the version
 # tools/fetch-vlckit.sh pins, configured as VideoLAN configures them but with libbluray on, which their prebuilt
 # frameworks leave out, so a Blu-ray ISO plays (docs/design/2026-10-04-files-and-network-libraries.md).
-# buildMobileVLCKit.patch turns libbluray on and sets the apps' own deployment targets, which current Xcode needs;
-# vlc/ holds the patches VLCKit's script applies to VLC beside its own, one so libbluray builds for iOS.
+# buildMobileVLCKit.patch turns libbluray on and sets the apps' own deployment targets, which current Xcode needs (the
+# Apple TV's is TVVLCKit, VLCKit 3's own framework for tvOS);
+# vlc/ holds the patches VLCKit's script applies to VLC beside its own, so libbluray builds for iOS and tvOS.
 # Writes one tar.xz per platform; what kangzj/libvlc-lgpl's releases keep (which fetch-vlckit.sh pins) are copies.
 #
 #   tools/vlckit/build.sh [outdir]      outdir defaults to build/vlckit, and the sources go in build/vlckit-src,
@@ -30,6 +31,7 @@ cp "$here"/vlc/*.patch libvlc/patches/
 # Homebrew's autoconf adds -std=gnu23, which the K&R C in some contribs does not compile under.
 export ac_cv_prog_cc_c23=no
 ./buildMobileVLCKit.sh -f
+./buildMobileVLCKit.sh -t -f
 ./buildMobileVLCKit.sh -x
 
 check() {
@@ -41,8 +43,10 @@ check() {
   fi
 }
 check build/MobileVLCKit.xcframework/ios-arm64/MobileVLCKit.framework/MobileVLCKit
+check build/TVVLCKit.xcframework/tvos-arm64/TVVLCKit.framework/TVVLCKit
 check build/VLCKit.xcframework/macos-arm64_x86_64/VLCKit.framework/Versions/A/VLCKit
 
 tar -cJf "$out/MobileVLCKit-$VERSION.tar.xz" -C build MobileVLCKit.xcframework
+tar -cJf "$out/TVVLCKit-$VERSION.tar.xz" -C build TVVLCKit.xcframework
 tar -cJf "$out/VLCKit-$VERSION.tar.xz" -C build VLCKit.xcframework
 shasum -a 256 "$out"/*-"$VERSION".tar.xz

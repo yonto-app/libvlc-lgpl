@@ -1,5 +1,5 @@
 diff --git a/buildMobileVLCKit.sh b/buildMobileVLCKit.sh
-index db20d0c..66b7f69 100755
+index db20d0c..284eb27 100755
 --- a/buildMobileVLCKit.sh
 +++ b/buildMobileVLCKit.sh
 @@ -9,7 +9,7 @@ BUILD_SIMULATOR=yes
@@ -11,6 +11,15 @@ index db20d0c..66b7f69 100755
  VERBOSE=no
  DEBUG=no
  CONFIGURATION="Release"
+@@ -102,7 +102,7 @@ do
+              TVOS=yes
+              IOS=no
+              SDK_VERSION=`xcrun --sdk appletvos --show-sdk-version`
+-             SDK_MIN=10.2
++             SDK_MIN=18.0
+              OSVERSIONMINCFLAG=mtvos
+              OSVERSIONMINLDFLAG=tvos
+              ;;
 @@ -111,7 +111,7 @@ do
               IOS=no
               BITCODE=no
@@ -33,16 +42,17 @@ index db20d0c..66b7f69 100755
      xcodebuild archive \
                 -project "$1.xcodeproj" \
                 -sdk $PLATFORM$SDK \
-@@ -284,6 +290,8 @@ buildxcodeproj()
+@@ -284,6 +290,9 @@ buildxcodeproj()
                 -archivePath build/"$target"-$PLATFORM$SDK.xcarchive \
                 ARCHS="${architectures}" \
                 IPHONEOS_DEPLOYMENT_TARGET=${SDK_MIN} \
 +               MACOSX_DEPLOYMENT_TARGET=${SDK_MIN} \
++               TVOS_DEPLOYMENT_TARGET=${SDK_MIN} \
 +               OTHER_LDFLAGS="$ldflags" \
                 ${bitcodeflag} \
                 SKIP_INSTALL=no \
                 > ${out}
-@@ -473,7 +481,7 @@ buildLibVLC() {
+@@ -473,7 +482,7 @@ buildLibVLC() {
          CUSTOMOSOPTIONS="--disable-libarchive"
      fi
      if [ "$MACOS" = "yes" ]; then
@@ -51,7 +61,7 @@ index db20d0c..66b7f69 100755
      fi
      if [ "$IOS" = "yes" ]; then
          CUSTOMOSOPTIONS=""
-@@ -542,7 +550,7 @@ buildLibVLC() {
+@@ -542,7 +551,7 @@ buildLibVLC() {
      ../bootstrap --build=${BUILD_TRIPLET} --host=${HOST_TRIPLET} --prefix=${VLCROOT}/contrib/${OSSTYLE}${PLATFORM_IDENTIFIER}-${HOST_TRIPLET}-${ARCH} --disable-gpl \
          --enable-ad-clauses \
          --disable-gnuv3 \
@@ -60,7 +70,7 @@ index db20d0c..66b7f69 100755
          --disable-sdl \
          --disable-SDL_image \
          --disable-iconv \
-@@ -685,7 +693,7 @@ buildLibVLC() {
+@@ -685,7 +694,7 @@ buildLibVLC() {
          --disable-goom \
          --disable-dvdread \
          --disable-dvdnav \

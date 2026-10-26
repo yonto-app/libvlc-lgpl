@@ -21,21 +21,21 @@ Use it from Gradle as a Maven repository pinned to a commit of this repository:
 maven("https://raw.githubusercontent.com/kangzj/libvlc-lgpl/<commit>/maven")
 ```
 
-# VLCKit with libbluray, for Yonto Player on iOS and the Mac
+# VLCKit with libbluray, for Yonto Player on iOS, the Apple TV and the Mac
 
 VideoLAN's prebuilt VLCKit leaves libbluray out (`--disable-bluray`), so it cannot open a Blu-ray disc image.
 This is VLCKit 3.7.3 built from VideoLAN's own sources as VideoLAN configures it, with three changes, all in `vlckit/`:
 
 - libbluray is turned on (`buildMobileVLCKit.patch`), and the Mac framework links DiskArbitration, which libbluray uses there.
-- The deployment targets are iOS 16.0 and macOS 13.0, since current Xcode refuses VLCKit's iOS 9.0.
-- libbluray's build is patched to build for iOS, which has no DiskArbitration (`vlc/0100-…patch`, which adds `contrib/src/bluray/0002-Build-for-iOS-which-has-no-DiskArbitration.patch` to VLC).
+- The deployment targets are iOS 16.0, tvOS 18.0 and macOS 13.0, since current Xcode refuses VLCKit's iOS 9.0 and tvOS 10.2.
+- libbluray's build is patched to build for iOS, which has no DiskArbitration (`vlc/0100-…patch`, which adds `contrib/src/bluray/0002-Build-for-iOS-which-has-no-DiskArbitration.patch` to VLC), and for tvOS, which cannot start a process (`vlc/0101-…patch`, which adds `contrib/src/bluray/0003-Build-for-tvOS-which-cannot-start-a-process.patch`).
 
 Like VideoLAN's, it is built with `--disable-gpl`, and `build.sh` fails when the result holds no libbluray or a GPL string.
 
 | | |
 | --- | --- |
-| Artifacts | `MobileVLCKit-3.7.3-1.tar.xz` (iOS: arm64, and arm64 and x86_64 for the simulator) and `VLCKit-3.7.3-1.tar.xz` (the Mac: arm64 and x86_64), on this repository's release `vlckit-3.7.3-1` |
-| SHA-256 | `834c19440664aead01f61a32a4569decda62940a9d97e22ca508d900a347b734` (MobileVLCKit), `9ab026b66a1e93f6317510e51271f9b90249f66d3b57c3531e54f5eff3e8e806` (VLCKit) |
+| Artifacts | `MobileVLCKit-3.7.3-1.tar.xz` (iOS: arm64, and arm64 and x86_64 for the simulator), `TVVLCKit-3.7.3-1.tar.xz` (tvOS: arm64, and arm64 and x86_64 for the simulator) and `VLCKit-3.7.3-1.tar.xz` (the Mac: arm64 and x86_64), on this repository's release `vlckit-3.7.3-1` |
+| SHA-256 | `834c19440664aead01f61a32a4569decda62940a9d97e22ca508d900a347b734` (MobileVLCKit), `4cb9df389a8150f651fa61727f01aba5f5421cc46866ebea4491c18809e182b8` (TVVLCKit), `9ab026b66a1e93f6317510e51271f9b90249f66d3b57c3531e54f5eff3e8e806` (VLCKit) |
 | Licence | LGPL-2.1-or-later (`COPYING.LGPL-2.1`) |
 | Source | https://code.videolan.org/videolan/VLCKit (tag `3.7.3`), and the VLC commit and patches that tag's `buildMobileVLCKit.sh` fetches and applies |
 | Recipe | `vlckit/build.sh`, which needs macOS with Xcode and the tools its header lists; it is the exact script that makes the archives |

@@ -1,0 +1,68 @@
+From 5822fbed6a5bdb2612b9adc7fb068c21e430150f Mon Sep 17 00:00:00 2001
+From: Jasper Kang <kangzjnet@gmail.com>
+Date: Mon, 26 Oct 2026 21:17:24 +1300
+Subject: [PATCH] contrib: bluray: build for tvOS, which cannot start a process
+
+libbluray looks for a JDK on Darwin by running /usr/libexec/java_home, but tvOS has no vfork or execl and no Java; BD-J is unused there.
+---
+ ...or-tvOS-which-cannot-start-a-process.patch | 35 +++++++++++++++++++
+ contrib/src/bluray/rules.mak                  |  1 +
+ 2 files changed, 36 insertions(+)
+ create mode 100644 contrib/src/bluray/0003-Build-for-tvOS-which-cannot-start-a-process.patch
+
+diff --git a/contrib/src/bluray/0003-Build-for-tvOS-which-cannot-start-a-process.patch b/contrib/src/bluray/0003-Build-for-tvOS-which-cannot-start-a-process.patch
+new file mode 100644
+index 0000000000..263447f2d5
+--- /dev/null
++++ b/contrib/src/bluray/0003-Build-for-tvOS-which-cannot-start-a-process.patch
+@@ -0,0 +1,35 @@
++From: Jasper Kang <kangzjnet@gmail.com>
++Subject: [PATCH] Build for tvOS, which cannot start a process
++
++Finding a JDK on Darwin runs /usr/libexec/java_home, but tvOS has no vfork or
++execl, and no Java to find; BD-J stays unused there.
++---
++ src/libbluray/bdj/bdj.c | 7 +++++++
++ 1 file changed, 7 insertions(+)
++
++--- a/src/libbluray/bdj/bdj.c	2026-10-26 21:16:37
+++++ b/src/libbluray/bdj/bdj.c	2026-10-26 21:16:46
++@@ -240,9 +240,15 @@
++ 
++ #if defined(__APPLE__) && !defined(HAVE_BDJ_J2ME)
++ 
+++#include <TargetConditionals.h>
+++
++ #define MACOS_JAVA_HOME "/usr/libexec/java_home"
++ static char *_java_home_macos()
++ {
+++#if TARGET_OS_TV
+++    /* tvOS starts no other process and has no Java to find. */
+++    return NULL;
+++#else
++     static char result[PATH_MAX] = "";
++ 
++     if (result[0])
++@@ -298,6 +304,7 @@
++ 
++     BD_DEBUG(DBG_BDJ, "macos java home: '%s'\n", result );
++     return result;
+++#endif
++ }
++ #undef MACOS_JAVA_HOME
++ 
+diff --git a/contrib/src/bluray/rules.mak b/contrib/src/bluray/rules.mak
+index 04a30556e9..f528907218 100644
+--- a/contrib/src/bluray/rules.mak
++++ b/contrib/src/bluray/rules.mak
+@@ -48,6 +48,7 @@ bluray: libbluray-$(BLURAY_VERSION).tar.xz .sum-bluray
+ 	$(UNPACK)
+ 	$(APPLY) $(SRC)/bluray/0001-Link-with-gdi32-when-using-freetype-in-Windows.patch
+ 	$(APPLY) $(SRC)/bluray/0002-Build-for-iOS-which-has-no-DiskArbitration.patch
++	$(APPLY) $(SRC)/bluray/0003-Build-for-tvOS-which-cannot-start-a-process.patch
+ 	$(MOVE)
+ 
+ .bluray: bluray crossfile.meson
+-- 
+2.55.0
+
