@@ -5,7 +5,8 @@
 # buildMobileVLCKit.patch turns libbluray on and sets the apps' own deployment targets, which current Xcode needs (the
 # Apple TV's is TVVLCKit, VLCKit 3's own framework for tvOS);
 # vlc/ holds the patches VLCKit's script applies to VLC beside its own: libbluray building for iOS and tvOS, subtitles
-# blended over a hardware decoder's picture once it is converted, and libass's `ssa-font`, the font the apps ship.
+# blended over a hardware decoder's picture once it is converted, blend taking P010, and libass's `ssa-font`, the font
+# the apps ship.
 # Writes one tar.xz per platform; what kangzj/libvlc-lgpl's releases keep (which fetch-vlckit.sh pins) are copies.
 #
 #   tools/vlckit/build.sh [outdir]      outdir defaults to build/vlckit, and the sources go in build/vlckit-src,
