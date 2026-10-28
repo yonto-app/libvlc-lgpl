@@ -1,0 +1,34 @@
+From 83b0e54965f03883db73ceb647e6670c30d6d397 Mon Sep 17 00:00:00 2001
+From: Jasper Kang <kangzjnet@gmail.com>
+Date: Thu, 29 Oct 2026 09:56:14 +1300
+Subject: [PATCH 102/104] vout: blend subpictures after converting an opaque
+ picture
+
+A hardware decoder's picture (CVPX on Apple) has no planes, so blending
+subtitles into it early fails and they are never seen. Such a picture's
+subpictures are blended once it is converted for the display.
+---
+ src/video_output/video_output.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/src/video_output/video_output.c b/src/video_output/video_output.c
+index cd06e802..cea6adf8 100644
+--- a/src/video_output/video_output.c
++++ b/src/video_output/video_output.c
+@@ -1005,7 +1005,12 @@ static int ThreadDisplayRenderPicture(vout_thread_t *vout, bool is_forced)
+     //will have the effect that snapshots miss the subpictures. We do this
+     //because there is currently no way to transform subpictures to match
+     //the source format.
+-    const bool do_early_spu = !do_dr_spu &&
++    /* An opaque picture (a hardware decoder's) cannot be blended into, so
++     * its subpictures are blended once it is converted for the display. */
++    const vlc_chroma_description_t *source_chroma =
++        vlc_fourcc_GetChromaDescription(filtered->format.i_chroma);
++    const bool is_opaque = source_chroma == NULL || source_chroma->plane_count == 0;
++    const bool do_early_spu = !do_dr_spu && !is_opaque &&
+                                vd->source.orientation == ORIENT_NORMAL &&
+                               (vd->info.is_slow ||
+                                sys->display.use_dr ||
+-- 
+2.55.0
+

@@ -1,0 +1,65 @@
+From 47831803662401c7f18d1815bc6bc2bb5e963b11 Mon Sep 17 00:00:00 2001
+From: Jasper Kang <kangzjnet@gmail.com>
+Date: Thu, 29 Oct 2026 09:56:14 +1300
+Subject: [PATCH 104/104] libass: add ssa-font, a default font file used
+ instead of the system's
+
+On iOS and tvOS the fallback CoreText offers for CJK text is a file an app
+cannot open, tried again for every glyph of every picture: the subtitles
+stay blank and the video stalls behind them. An app that ships a font
+names it here, and libass draws in it and the fonts the file embeds.
+---
+ modules/codec/libass.c | 16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
+
+diff --git a/modules/codec/libass.c b/modules/codec/libass.c
+index fccbc29a..1da29174 100644
+--- a/modules/codec/libass.c
++++ b/modules/codec/libass.c
+@@ -58,6 +58,9 @@ static int  Create ( vlc_object_t * );
+ static void Destroy( vlc_object_t * );
+ 
+ #define TEXT_SSA_FONTSDIR   N_("Additional fonts directory")
++#define TEXT_SSA_FONT       N_("Default font file")
++#define LONGTEXT_SSA_FONT   N_("The font every subtitle is drawn in when the " \
++    "file embeds none it names, instead of the system's fonts.")
+ 
+ vlc_module_begin ()
+     set_shortname( N_("Subtitles (advanced)"))
+@@ -67,6 +70,7 @@ vlc_module_begin ()
+     set_subcategory( SUBCAT_INPUT_SCODEC )
+     set_callbacks( Create, Destroy )
+     add_string("ssa-fontsdir", NULL, TEXT_SSA_FONTSDIR, NULL, false)
++    add_loadfile("ssa-font", NULL, TEXT_SSA_FONT, LONGTEXT_SSA_FONT, false)
+ vlc_module_end ()
+ 
+ /*****************************************************************************
+@@ -254,6 +258,17 @@ static int Create( vlc_object_t *p_this )
+     const char *psz_family = "Arial"; /* Use Arial if we can't find anything more suitable */
+ #endif
+ 
++    /* With a font of its own, the system's go unused: on iOS and tvOS the
++     * fallback CoreText offers for CJK is a file an app cannot open, tried
++     * again for every glyph of every picture. */
++    char *psz_default_font = var_InheritString( p_dec, "ssa-font" );
++    if( psz_default_font )
++    {
++        ass_set_fonts( p_renderer, psz_default_font, NULL, ASS_FONTPROVIDER_NONE, NULL, 0 );
++        free( psz_default_font );
++    }
++    else
++    {
+ #ifdef HAVE_FONTCONFIG
+ #if defined(_WIN32)
+     vlc_dialog_id *p_dialog_id =
+@@ -270,6 +285,7 @@ static int Create( vlc_object_t *p_this )
+ #else
+     ass_set_fonts( p_renderer, psz_font, psz_family, ASS_FONTPROVIDER_AUTODETECT, NULL, 0 );
+ #endif
++    }
+ 
+     /* Anything else than NONE will break smooth img updating.
+        TODO: List and force ASS_HINTING_LIGHT for known problematic fonts */
+-- 
+2.55.0
+

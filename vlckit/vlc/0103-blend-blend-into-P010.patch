@@ -1,0 +1,62 @@
+From d23c075fd97f02f100b715e18039be6563709554 Mon Sep 17 00:00:00 2001
+From: Jasper Kang <kangzjnet@gmail.com>
+Date: Thu, 29 Oct 2026 09:56:14 +1300
+Subject: [PATCH 103/104] blend: blend into P010
+
+A display that takes 10-bit pictures as P010 gets its subtitles too.
+---
+ modules/video_filter/blend.cpp | 14 ++++++++------
+ 1 file changed, 8 insertions(+), 6 deletions(-)
+
+diff --git a/modules/video_filter/blend.cpp b/modules/video_filter/blend.cpp
+index cea8cd6a..ed1a533a 100644
+--- a/modules/video_filter/blend.cpp
++++ b/modules/video_filter/blend.cpp
+@@ -151,7 +151,7 @@ private:
+     uint8_t *data[4];
+ };
+ 
+-template <bool swap_uv>
++template <typename pixel, bool swap_uv>
+ class CPictureYUVSemiPlanar : public CPicture {
+ public:
+     CPictureYUVSemiPlanar(const CPicture &cfg) : CPicture(cfg)
+@@ -187,12 +187,12 @@ public:
+             data[1] += picture->p[1].i_pitch;
+     }
+ private:
+-    uint8_t *getPointer(unsigned plane, unsigned dx) const
++    pixel *getPointer(unsigned plane, unsigned dx) const
+     {
+         if (plane == 0)
+-            return &data[plane][x + dx];
++            return (pixel*)&data[plane][(x + dx) * sizeof(pixel)];
+         else
+-            return &data[plane][(x + dx) / 2 * 2];
++            return (pixel*)&data[plane][(x + dx) / 2 * 2 * sizeof(pixel)];
+     }
+     uint8_t *data[2];
+ };
+@@ -390,8 +390,9 @@ typedef CPictureYUVPlanar<uint8_t,  4,4, false, false> CPictureI410_8;
+ 
+ typedef CPictureYUVPlanar<uint8_t,  4,1, false, false> CPictureI411_8;
+ 
+-typedef CPictureYUVSemiPlanar<false>                   CPictureNV12;
+-typedef CPictureYUVSemiPlanar<true>                    CPictureNV21;
++typedef CPictureYUVSemiPlanar<uint8_t,  false>         CPictureNV12;
++typedef CPictureYUVSemiPlanar<uint8_t,  true>          CPictureNV21;
++typedef CPictureYUVSemiPlanar<uint16_t, false>         CPictureP010;
+ 
+ typedef CPictureYUVPlanar<uint8_t,  2,2, false, true>  CPictureYV12;
+ typedef CPictureYUVPlanar<uint8_t,  2,2, false, false> CPictureI420_8;
+@@ -582,6 +583,7 @@ static const struct {
+     YUV(VLC_CODEC_YV12,     CPictureYV12,     convertNone),
+     YUV(VLC_CODEC_NV12,     CPictureNV12,     convertNone),
+     YUV(VLC_CODEC_NV21,     CPictureNV21,     convertNone),
++    YUV(VLC_CODEC_P010,     CPictureP010,     convert8To16Bits),
+     YUV(VLC_CODEC_J420,     CPictureI420_8,   convertNone),
+     YUV(VLC_CODEC_I420,     CPictureI420_8,   convertNone),
+ #ifdef WORDS_BIGENDIAN
+-- 
+2.55.0
+
