@@ -1,25 +1,29 @@
 #!/bin/sh
 # Builds the libVLC the Android apps ship, from VideoLAN's own sources with every GPL library left out (no x264,
 # x265, libdvdread or live555; FFmpeg without --enable-gpl), so the engine is LGPL-2.1 and nothing else
-# (docs/design/2026-10-04-files-and-network-libraries.md). Writes a Maven repository holding the AAR, which
-# settings.gradle.kts reads from build/libvlc-repo.
+# (docs/design/2026-10-04-files-and-network-libraries.md), plus ../vlc/'s patches, which both libVLC builds apply
+# (FFmpeg's AVS+ decoder). Writes a Maven repository holding the AAR: -Pyonto.libvlcRepo=<it>
+# tries it, and what is kept at kangzj/libvlc-lgpl (which settings.gradle.kts pins) is a copy of it.
 #
 #   tools/libvlc/build.sh [outdir]      outdir defaults to build/libvlc-repo
 #
 # Needs macOS or Linux with the Android SDK, JDK 17, NDK 28 (arm64-v8a) and NDK 21 (armeabi-v7a; on an Apple Silicon Mac
-# it needs Rosetta, and its GNU ar and ranlib crash there, so they are swapped for NDK 28's LLVM ones), and
-# Homebrew's automake libtool pkg-config gettext meson nasm yasm wget gnu-sed bison flex ragel protobuf coreutils.
+# it needs Rosetta, its ndk-build needs arm64 added to its x86_64 host case, and its GNU ar, ranlib, nm, strip, objcopy,
+# objdump and readelf crash there, so each is swapped for NDK 28's llvm- one, in both toolchains' bin folders), and
+# Homebrew's automake libtool pkg-config gettext meson nasm yasm wget gnu-sed bison flex ragel protobuf coreutils, with
+# coreutils' and gnu-sed's gnubin first on PATH: libvlcjni checks the Gradle it downloads with GNU sha256sum.
 set -eu
 
 VLC_ANDROID_TAG=libvlc-3.6.5
 LIBVLCJNI_BRANCH=libvlcjni-3.x
 LIBVLCJNI_HASH=965e8648717076654f463ae64ee1d008d7ff282d
-VERSION=3.6.5-1
+VERSION=3.6.5-2
 : "${ANDROID_SDK:?set ANDROID_SDK}"
 : "${NDK_ARM64:?set NDK_ARM64 to NDK 28}"
 : "${NDK_ARMV7:?set NDK_ARMV7 to NDK 21}"
 
-root="$(cd "$(dirname "$0")/../.." && pwd)"
+here="$(cd "$(dirname "$0")" && pwd)"
+root="$(cd "$here/../.." && pwd)"
 out="${1:-$root/build/libvlc-repo}"
 work="${LIBVLC_WORK:-$root/build/libvlc-src}"
 mkdir -p "$work"
@@ -29,6 +33,7 @@ cd "$work"
 if [ ! -d libvlcjni ]; then
   git clone --single-branch --branch "$LIBVLCJNI_BRANCH" https://code.videolan.org/videolan/libvlcjni.git
   git -C libvlcjni reset --hard "$LIBVLCJNI_HASH"
+  cp "$here"/../vlc/*.patch libvlcjni/libvlc/patches/
 fi
 
 # Homebrew's autoconf adds -std=gnu23, which the K&R C in FLAC and libsmb2 does not compile under.
@@ -54,6 +59,10 @@ aar="$work/libvlcjni/libvlc/build/outputs/aar/libvlc-dev.aar"
 for abi in arm64-v8a armeabi-v7a; do
   if strings -a "$work/libvlcjni/libvlc/jni/libs/$abi/libvlc.so" | grep -q -E 'x264 advanced options|live555\.cpp|modules/access/dvd(read|nav)\.c'; then
     echo "$abi libvlc.so still holds GPL code" >&2
+    exit 1
+  fi
+  if ! strings -a "$work/libvlcjni/libvlc/jni/libs/$abi/libvlc.so" | grep -q 'Enhanced field coded P picture'; then
+    echo "$abi libvlc.so has no AVS+ decoder" >&2
     exit 1
   fi
 done
