@@ -1,5 +1,5 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
-From: Jasper Kang <kangzjnet@gmail.com>
+From: yonto-app <336298264+yonto-app@users.noreply.github.com>
 Date: Sun, 25 Oct 2026 04:34:45 +1300
 Subject: [PATCH] contrib: bluray: build for iOS, which has no DiskArbitration
 
@@ -16,7 +16,7 @@ index 0000000000..fa2a541350
 --- /dev/null
 +++ b/contrib/src/bluray/0002-Build-for-iOS-which-has-no-DiskArbitration.patch
 @@ -0,0 +1,38 @@
-+From: Jasper Kang <kangzjnet@gmail.com>
++From: yonto-app <336298264+yonto-app@users.noreply.github.com>
 +Subject: [PATCH] Build for iOS, which has no DiskArbitration
 +
 +DiskArbitration only finds the mount point of a disc in a drive, so without

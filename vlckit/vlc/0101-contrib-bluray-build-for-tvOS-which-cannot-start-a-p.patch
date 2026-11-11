@@ -1,5 +1,5 @@
 From 5822fbed6a5bdb2612b9adc7fb068c21e430150f Mon Sep 17 00:00:00 2001
-From: Jasper Kang <kangzjnet@gmail.com>
+From: yonto-app <336298264+yonto-app@users.noreply.github.com>
 Date: Mon, 26 Oct 2026 21:17:24 +1300
 Subject: [PATCH] contrib: bluray: build for tvOS, which cannot start a process
 
@@ -16,7 +16,7 @@ index 0000000000..263447f2d5
 --- /dev/null
 +++ b/contrib/src/bluray/0003-Build-for-tvOS-which-cannot-start-a-process.patch
 @@ -0,0 +1,35 @@
-+From: Jasper Kang <kangzjnet@gmail.com>
++From: yonto-app <336298264+yonto-app@users.noreply.github.com>
 +Subject: [PATCH] Build for tvOS, which cannot start a process
 +
 +Finding a JDK on Darwin runs /usr/libexec/java_home, but tvOS has no vfork or

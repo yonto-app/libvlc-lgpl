@@ -1,6 +1,6 @@
 From dc759c58ff709f07377a7e6c4f6ce1c3fc6ad52c Mon Sep 17 00:00:00 2001
-Message-Id: <dc759c58ff709f07377a7e6c4f6ce1c3fc6ad52c.1793850990.git.kangzjnet@gmail.com>
-From: Jasper Kang <kangzjnet@gmail.com>
+Message-Id: <dc759c58ff709f07377a7e6c4f6ce1c3fc6ad52c.1793850990.git.336298264+yonto-app@users.noreply.github.com>
+From: yonto-app <336298264+yonto-app@users.noreply.github.com>
 Date: Thu, 5 Nov 2026 16:56:30 +1300
 Subject: [PATCH] contrib: ffmpeg: decode AVS+, the AVS1-P16 Broadcasting
  profile
@@ -9,7 +9,7 @@ FFmpeg 4.4's cavs decoder takes the JiZhun profile only, so the AVS+ that
 China's DTMB and cable channels carry decodes to nothing. avsplus.patch
 backports FFmpeg master's decoder (c37ebc8d98) onto 4.4.5.
 
-Message-Id: <dc759c58ff709f07377a7e6c4f6ce1c3fc6ad52c.1793850990.git.kangzjnet@gmail.com>
+Message-Id: <dc759c58ff709f07377a7e6c4f6ce1c3fc6ad52c.1793850990.git.336298264+yonto-app@users.noreply.github.com>
 ---
  contrib/src/ffmpeg/avsplus.patch | 3083 ++++++++++++++++++++++++++++++
  contrib/src/ffmpeg/rules.mak     |    1 +

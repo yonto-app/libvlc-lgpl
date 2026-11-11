@@ -1,5 +1,5 @@
 From 47831803662401c7f18d1815bc6bc2bb5e963b11 Mon Sep 17 00:00:00 2001
-From: Jasper Kang <kangzjnet@gmail.com>
+From: yonto-app <336298264+yonto-app@users.noreply.github.com>
 Date: Thu, 29 Oct 2026 09:56:14 +1300
 Subject: [PATCH 104/104] libass: add ssa-font, a default font file used
  instead of the system's

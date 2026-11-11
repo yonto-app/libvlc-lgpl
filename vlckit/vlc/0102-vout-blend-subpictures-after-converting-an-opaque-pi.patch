@@ -1,5 +1,5 @@
 From 83b0e54965f03883db73ceb647e6670c30d6d397 Mon Sep 17 00:00:00 2001
-From: Jasper Kang <kangzjnet@gmail.com>
+From: yonto-app <336298264+yonto-app@users.noreply.github.com>
 Date: Thu, 29 Oct 2026 09:56:14 +1300
 Subject: [PATCH 102/104] vout: blend subpictures after converting an opaque
  picture
