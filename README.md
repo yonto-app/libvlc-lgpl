@@ -4,14 +4,16 @@ VideoLAN's `libvlc-all` on Maven Central is labelled LGPL but its `libvlc.so` ho
 This is libVLC 3.6.5 built from VideoLAN's own sources with VideoLAN's LGPL contrib option (`--license a`, which passes `--disable-gpl`), so no GPL library is in it and FFmpeg is configured without `--enable-gpl`.
 It has no video encoder.
 Since 3.6.5-2 it has one change, which the VLCKit below has too: FFmpeg's own decoder for AVS+ (AVS1-P16, the Broadcasting profile), which FFmpeg's master branch gained on 2026-11-02, backported onto the FFmpeg 4.4.5 that VLC's contribs build (`vlc/0200-…patch`, which adds `contrib/src/ffmpeg/avsplus.patch` to VLC).
-`libvlc/build.sh` fails when the result holds a GPL string or no AVS+ decoder.
+Since 3.6.5-3 it has a second: a decoder made while the input is paused is told of the pause, so a paused title that is left and come back to draws its picture (`vlc/0201-…patch`, adapted from VLC master's `44a4e0b0b30dd1080ac1003ba50aa4d98ab88c6d`).
+The VLCKit 3.7.3-3 archives below were built before that patch, so they do not have it, though `vlckit/build.sh` applies `vlc/`'s patches too.
+`libvlc/build.sh` fails when the result holds a GPL string or no AVS+ decoder, or when a patch in `vlc/` was not applied.
 
 | | |
 | --- | --- |
-| Artifact | `app.yonto.vendor:libvlc-lgpl:3.6.5-2` (AAR; arm64-v8a and armeabi-v7a); 3.6.5-1, without the AVS+ decoder, stays beside it |
-| SHA-256 | `e4671941e9a2a9046d6eb1973625d19ea9f87780fa8af3a43a768a824e27bdc1` |
+| Artifact | `app.yonto.vendor:libvlc-lgpl:3.6.5-3` (AAR; arm64-v8a and armeabi-v7a); 3.6.5-2, without the second change, and 3.6.5-1, without either, stay beside it |
+| SHA-256 | `22f7a770dba9d7fd57bebead7db898e0ff3e1acbe360f580c48710a1582c0aaa` |
 | Licence | LGPL-2.1-or-later (`COPYING.LGPL-2.1`) |
-| Source | https://code.videolan.org/videolan/vlc-android (tag `libvlc-3.6.5`), https://code.videolan.org/videolan/libvlcjni (branch `libvlcjni-3.x`, commit `965e8648717076654f463ae64ee1d008d7ff282d`), and the VLC commit `c9dde25a62c4612d71250c4eb845154e0ea9e13e` that commit fetches, with `vlc/`'s patch |
+| Source | https://code.videolan.org/videolan/vlc-android (tag `libvlc-3.6.5`), https://code.videolan.org/videolan/libvlcjni (branch `libvlcjni-3.x`, commit `965e8648717076654f463ae64ee1d008d7ff282d`), and the VLC commit `c9dde25a62c4612d71250c4eb845154e0ea9e13e` that commit fetches, with `vlc/`'s patches |
 | Recipe | `libvlc/build.sh`, which needs the Android SDK, NDK 28 and NDK 21, JDK 17 and the tools its header lists; it is the exact script that makes the AAR |
 
 Yonto Player carries the libraries as the shared `libvlc.so` and `libvlcjni.so`, not linked into its own code.

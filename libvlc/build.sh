@@ -2,8 +2,8 @@
 # Builds the libVLC the Android apps ship, from VideoLAN's own sources with every GPL library left out (no x264,
 # x265, libdvdread or live555; FFmpeg without --enable-gpl), so the engine is LGPL-2.1 and nothing else
 # (docs/design/2026-10-04-files-and-network-libraries.md), plus ../vlc/'s patches, which both libVLC builds apply
-# (FFmpeg's AVS+ decoder). Writes a Maven repository holding the AAR: -Pyonto.libvlcRepo=<it>
-# tries it, and what is kept at kangzj/libvlc-lgpl (which settings.gradle.kts pins) is a copy of it.
+# (FFmpeg's AVS+ decoder, and a decoder made while paused told of the pause). Writes a Maven repository holding the AAR: -Pyonto.libvlcRepo=<it>
+# tries it, and what is kept at yonto-app/libvlc-lgpl (which settings.gradle.kts pins) is a copy of it.
 #
 #   tools/libvlc/build.sh [outdir]      outdir defaults to build/libvlc-repo
 #
@@ -17,7 +17,7 @@ set -eu
 VLC_ANDROID_TAG=libvlc-3.6.5
 LIBVLCJNI_BRANCH=libvlcjni-3.x
 LIBVLCJNI_HASH=965e8648717076654f463ae64ee1d008d7ff282d
-VERSION=3.6.5-2
+VERSION=3.6.5-3
 : "${ANDROID_SDK:?set ANDROID_SDK}"
 : "${NDK_ARM64:?set NDK_ARM64 to NDK 28}"
 : "${NDK_ARMV7:?set NDK_ARMV7 to NDK 21}"
@@ -54,6 +54,15 @@ build() {
 }
 build arm64-v8a "$NDK_ARM64" aarch64-linux-android
 build armeabi-v7a "$NDK_ARMV7" arm-linux-androideabi
+
+# A work folder cloned before a patch was added never copies it, and would build without it.
+for patch in "$here"/../vlc/*.patch; do
+  id="$(sed -n 's/^Message-Id: <\(.*\)>$/\1/p' "$patch" | head -n 1)"
+  if ! git -C "$work/libvlcjni/vlc" log --format=%H --fixed-strings --grep="$id" | grep -q .; then
+    echo "built without $(basename "$patch"): remove $work/libvlcjni and build again" >&2
+    exit 1
+  fi
+done
 
 aar="$work/libvlcjni/libvlc/build/outputs/aar/libvlc-dev.aar"
 for abi in arm64-v8a armeabi-v7a; do

@@ -1,0 +1,56 @@
+From c3d4cb2d5c1a7c652ae35984b51768bd83acd31a Mon Sep 17 00:00:00 2001
+Message-Id: <c3d4cb2d5c1a7c652ae35984b51768bd83acd31a.1794401155.git.336298264+yonto-app@users.noreply.github.com>
+From: yonto-app <336298264+yonto-app@users.noreply.github.com>
+Date: Thu, 12 Nov 2026 01:45:53 +1300
+Subject: [PATCH] input: es_out: pause a decoder created while the input is
+ paused
+
+A decoder made while the input is paused (a track turned back on when
+the video output returns, a track picked, a subtitle file added) was
+never told of the pause, so it and its output ran as if playing, as the
+FIXME in input_DecoderChangePause says. A seek made then waits for the
+decoder, and the picture that ends the wait can flush the one picture a
+paused seek shows before the output has drawn it, which leaves the
+video black until playback resumes.
+
+Adapted from master's 44a4e0b0b30dd1080ac1003ba50aa4d98ab88c6d
+("es_out: pause newly created decoders during next-frame"), which makes
+the same call in EsOutCreateDecoder.
+
+Message-Id: <c3d4cb2d5c1a7c652ae35984b51768bd83acd31a.1794401155.git.336298264+yonto-app@users.noreply.github.com>
+---
+ src/input/es_out.c | 12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
+
+diff --git a/src/input/es_out.c b/src/input/es_out.c
+index a5d15dba56..afe4961af3 100644
+--- a/src/input/es_out.c
++++ b/src/input/es_out.c
+@@ -1680,14 +1680,22 @@ static void EsCreateDecoder( es_out_t *out, es_out_id_t *p_es )
+     p_es->p_dec = input_DecoderNew( p_input, &p_es->fmt, p_es->p_pgrm->p_clock, input_priv(p_input)->p_sout );
+     if( p_es->p_dec )
+     {
++        if( p_sys->b_paused )
++            input_DecoderChangePause( p_es->p_dec, true, p_sys->i_pause_date );
++
+         if( p_sys->b_buffering )
+             input_DecoderStartWait( p_es->p_dec );
+ 
+         if( !p_es->p_master && p_sys->p_sout_record )
+         {
+             p_es->p_dec_record = input_DecoderNew( p_input, &p_es->fmt, p_es->p_pgrm->p_clock, p_sys->p_sout_record );
+-            if( p_es->p_dec_record && p_sys->b_buffering )
+-                input_DecoderStartWait( p_es->p_dec_record );
++            if( p_es->p_dec_record )
++            {
++                if( p_sys->b_buffering )
++                    input_DecoderStartWait( p_es->p_dec_record );
++                if( p_sys->b_paused )
++                    input_DecoderChangePause( p_es->p_dec_record, true, p_sys->i_pause_date );
++            }
+         }
+     }
+ 
+-- 
+2.55.0
+
