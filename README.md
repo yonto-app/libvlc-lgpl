@@ -54,13 +54,13 @@ Yonto Player embeds the framework as a dynamic framework, not linked into its ow
 This is libVLC 3.0.22-rc1 for Windows x64, built from VideoLAN's own VLC sources with mingw-w64 in the Docker image VideoLAN's CI builds Windows 3.0 in, as its `extras/package/win32/build.sh` builds it.
 The contribs are built with `--disable-gpl --disable-gnuv3`, so no GPL or LGPLv3 library is in it (no x264, x265, a52, dca, faad2, mad, libmpeg2, libdvdread, libdvdnav, libdvdcss, live555, GnuTLS or libzvbi) and FFmpeg is configured without `--enable-gpl`; libbluray is kept, so a Blu-ray disc image plays.
 Unlike Android's single `libvlc.so`, each VLC module is its own DLL, and some of VLC 3's own modules are GPL (Lua, the Real RTSP access and demuxer, the playlist exporters, the file logger, DirectShow and BDA capture), so every plugin built from a GPL source file is left out, by a scan of the sources each one is made from.
-It has the two changes in `vlc/` that the Android build has (FFmpeg's AVS+ decoder, and a decoder made while paused told of the pause), and one of its own, `libvlc-windows/vlc/0400-…patch`: the deinterlace plugin is built without Yadif, whose code is FFmpeg's GPL filter, and falls back to its automatic mode when Yadif is asked for.
+It has the two changes in `vlc/` that the Android build has (FFmpeg's AVS+ decoder, and a decoder made while paused told of the pause), and two of its own: `libvlc-windows/vlc/0400-…patch` builds the deinterlace plugin without Yadif, whose code is FFmpeg's GPL filter, falling back to its automatic mode when Yadif is asked for, and `libvlc-windows/vlc/0401-…patch` has libVLC trust its plugins cache by a plugin's size alone, since a Windows app package (MSIX) installs every file with the time it was installed, which would otherwise leave every plugin opened on each start.
 `libvlc-windows/build.sh` fails when a GPL or LGPLv3 contrib is in the result, or when a patch was not applied.
 
 | | |
 | --- | --- |
-| Artifact | `libvlc-windows-x64-3.0.22-rc1-1.zip` (`libvlc.dll`, `libvlccore.dll`, `plugins/`, `sdk/` with the headers and import libraries, and `vlc-cache-gen.exe`), on this repository's release `libvlc-windows-3.0.22-rc1-1` |
-| SHA-256 | `dd3532ff682699dee4ee5a83d14df7942f152e76991584659e277dbc8b6e3e4b` |
+| Artifact | `libvlc-windows-x64-3.0.22-rc1-2.zip` (`libvlc.dll`, `libvlccore.dll`, `plugins/`, `sdk/` with the headers and import libraries, and `vlc-cache-gen.exe`), on this repository's release `libvlc-windows-3.0.22-rc1-2` |
+| SHA-256 | `f02bfed1c050f070d50e0c613d1e8b6c4f3fa4245c5655bb76533534fd33ee6a` |
 | Licence | LGPL-2.1-or-later (`COPYING.LGPL-2.1`) |
 | Source | https://code.videolan.org/videolan/vlc (branch `3.0.x`, commit `c9dde25a62c4612d71250c4eb845154e0ea9e13e`), with `vlc/`'s and `libvlc-windows/vlc/`'s patches |
 | Recipe | `libvlc-windows/build.sh`, which needs Docker able to run linux/amd64 images; it is the exact script that makes the zip |
