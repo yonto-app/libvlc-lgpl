@@ -1,0 +1,36 @@
+From 33df5e377a2a26a68c0d8040c82bc4c812b13d05 Mon Sep 17 00:00:00 2001
+Message-Id: <33df5e377a2a26a68c0d8040c82bc4c812b13d05.1794954871.git.336298264+yonto-app@users.noreply.github.com>
+From: yonto-app <336298264+yonto-app@users.noreply.github.com>
+Date: Tue, 17 Nov 2026 22:34:22 +0000
+Subject: [PATCH] bank: trust the plugins cache by a plugin's size alone
+
+A Windows app package (MSIX) installs every file with the time it was
+installed rather than its own, so the plugins.dat vlc-cache-gen writes
+as the package is made never matched and libVLC opened every plugin on
+each start. The cache is always written for the plugins it ships with,
+by vlc-cache-gen beside them, so a plugin's size is enough to tell an
+entry that is stale.
+---
+ src/modules/bank.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/src/modules/bank.c b/src/modules/bank.c
+index 52037d5b59..e1e91d5dec 100644
+--- a/src/modules/bank.c
++++ b/src/modules/bank.c
+@@ -278,9 +278,10 @@ static int AllocatePluginFile (module_bank_t *bank, const char *abspath,
+     {
+         plugin = vlc_cache_lookup(&bank->cache, relpath);
+ 
++        /* By size alone: a Windows app package (MSIX) installs each file
++         * with the time it was installed, never the one the cache saw. */
+         if (plugin != NULL
+-         && (plugin->mtime != (int64_t)st->st_mtime
+-          || plugin->size != (uint64_t)st->st_size))
++         && plugin->size != (uint64_t)st->st_size)
+         {
+             msg_Err(bank->obj, "stale plugins cache: modified %s",
+                     plugin->abspath);
+-- 
+2.30.2
+

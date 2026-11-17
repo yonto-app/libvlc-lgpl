@@ -3,7 +3,8 @@
 # libvlcjni pins, cross-compiled with mingw-w64 in the Docker image VLC's own CI builds win64 3.0 in, as
 # extras/package/win32/build.sh builds it, plus ../vlc/'s patches, which every libVLC build applies (FFmpeg's AVS+
 # decoder, and a decoder made while paused told of the pause), and vlc/'s, which only this one does (deinterlace
-# without Yadif, whose code is FFmpeg's GPL filter) (docs/design/2026-11-17-yonto-on-windows.md).
+# without Yadif, whose code is FFmpeg's GPL filter, and the plugins cache trusted by a plugin's size alone, since an
+# MSIX installs every file with the time it was installed) (docs/design/2026-11-17-yonto-on-windows.md).
 # Every GPL library is left out as on Android (contribs with --disable-gpl --disable-gnuv3 --enable-ad-clauses, so
 # FFmpeg without --enable-gpl, and no x264, x265, a52, dca, faad2, mad, libmpeg2, libdvdread, libdvdnav, libdvdcss,
 # live555, GnuTLS or libzvbi), and libbluray kept, so a Blu-ray ISO plays.
@@ -22,7 +23,7 @@
 set -eu
 
 VLC_HASH=c9dde25a62c4612d71250c4eb845154e0ea9e13e
-VERSION=3.0.22-rc1-1
+VERSION=3.0.22-rc1-2
 IMAGE=registry.videolan.org/vlc-debian-win64:20221023193231
 TRIPLET=x86_64-w64-mingw32
 
