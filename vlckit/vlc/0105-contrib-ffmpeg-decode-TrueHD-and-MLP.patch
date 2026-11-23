@@ -1,0 +1,31 @@
+From a7db1f9e3bf9168194eb9cce3ed765d7af20888c Mon Sep 17 00:00:00 2001
+From: yonto-app <336298264+yonto-app@users.noreply.github.com>
+Date: Mon, 23 Nov 2026 15:33:22 +1300
+Subject: [PATCH] contrib: ffmpeg: decode TrueHD and MLP
+
+VLCKit's "Enable System DL" turns off FFmpeg's mlp decoder, demuxer and
+parser. The truehd decoder selects the mlp parser, so configure drops it
+too, and VLC's mlp packetizer then hands every TrueHD block to no
+decoder: a film with a TrueHD track plays silent. FFmpeg's own defaults
+are restored, which build both decoders.
+---
+ contrib/src/ffmpeg/rules.mak | 3 ---
+ 1 file changed, 3 deletions(-)
+
+diff --git a/contrib/src/ffmpeg/rules.mak b/contrib/src/ffmpeg/rules.mak
+index 6cd21dc4b9..4fcc360d01 100644
+--- a/contrib/src/ffmpeg/rules.mak
++++ b/contrib/src/ffmpeg/rules.mak
+@@ -33,9 +33,6 @@ FFMPEGCONF = \
+ 	--disable-encoder=vorbis \
+ 	--disable-decoder=opus \
+ 	--enable-libgsm \
+-	--disable-decoder=mlp \
+-	--disable-demuxer=mlp \
+-	--disable-parser=mlp \
+ 	--disable-debug \
+ 	--disable-avdevice \
+ 	--disable-devices \
+-- 
+2.55.0
+

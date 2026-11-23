@@ -5,7 +5,7 @@ This is libVLC 3.6.5 built from VideoLAN's own sources with VideoLAN's LGPL cont
 It has no video encoder.
 Since 3.6.5-2 it has one change, which the VLCKit below has too: FFmpeg's own decoder for AVS+ (AVS1-P16, the Broadcasting profile), which FFmpeg's master branch gained on 2026-11-02, backported onto the FFmpeg 4.4.5 that VLC's contribs build (`vlc/0200-…patch`, which adds `contrib/src/ffmpeg/avsplus.patch` to VLC).
 Since 3.6.5-3 it has a second: a decoder made while the input is paused is told of the pause, so a paused title that is left and come back to draws its picture (`vlc/0201-…patch`, adapted from VLC master's `44a4e0b0b30dd1080ac1003ba50aa4d98ab88c6d`).
-The VLCKit 3.7.3-3 archives below were built before that patch, so they do not have it, though `vlckit/build.sh` applies `vlc/`'s patches too.
+The VLCKit archives below have it since 3.7.3-4.
 Since 3.6.5-4 it has a third, Android's alone (`libvlc/vlc/0300-…patch`, which VLCKit does not take, having no AudioTrack): VideoLAN's own `f1369aeb95f89d1afb8ebec4403c30b45ff3e863` from VLC 3.0.x, which keeps a DynamicsProcessing effect Android refuses from marking the AudioTrack failed. Without it a 5.1 track played on a DIRECT output, where Android refuses the effect, is never written and plays silent.
 `libvlc/build.sh` fails when the result holds a GPL string, no AVS+ decoder or no AudioTrack fix, or when a patch in `vlc/` or `libvlc/vlc/` was not applied.
 
@@ -29,20 +29,21 @@ maven("https://raw.githubusercontent.com/yonto-app/libvlc-lgpl/<commit>/maven")
 # VLCKit with libbluray, for Yonto Player on iOS, the Apple TV and the Mac
 
 VideoLAN's prebuilt VLCKit leaves libbluray out (`--disable-bluray`), so it cannot open a Blu-ray disc image.
-This is VLCKit 3.7.3 built from VideoLAN's own sources as VideoLAN configures it, with five changes, in `vlckit/` and `vlc/`:
+This is VLCKit 3.7.3 built from VideoLAN's own sources as VideoLAN configures it, with six changes, in `vlckit/` and `vlc/`:
 
 - libbluray is turned on (`buildMobileVLCKit.patch`), and the Mac framework links DiskArbitration, which libbluray uses there.
 - The deployment targets are iOS 16.0, tvOS 18.0 and macOS 13.0, since current Xcode refuses VLCKit's iOS 9.0 and tvOS 10.2.
 - libbluray's build is patched to build for iOS, which has no DiskArbitration (`vlc/0100-…patch`, which adds `contrib/src/bluray/0002-Build-for-iOS-which-has-no-DiskArbitration.patch` to VLC), and for tvOS, which cannot start a process (`vlc/0101-…patch`, which adds `contrib/src/bluray/0003-Build-for-tvOS-which-cannot-start-a-process.patch`).
 - Since 3.7.3-2, subtitles are drawn on iOS and tvOS, where VideoToolbox's pictures have no planes to blend them into and the system has no CJK font an app can open: the video output blends an opaque picture's subtitles once it is converted (`vlc/0102-…patch`), the blend module takes P010 (`vlc/0103-…patch`), and libass takes `--ssa-font`, a font file used instead of the system's (`vlc/0104-…patch`).
 - Since 3.7.3-3, AVS+ decodes, with the same FFmpeg change as the libVLC above (`../vlc/0200-…patch`).
+- Since 3.7.3-4, Dolby TrueHD and MLP decode: VLCKit's own `0003-Enable-System-DL.patch` turns FFmpeg's mlp decoder, demuxer and parser off, and the TrueHD decoder needs the mlp parser, so a TrueHD track played silent; `vlckit/vlc/0105-…patch` keeps FFmpeg's defaults. 3.7.3-4 also has `../vlc/0201-…patch` (a decoder made while paused is told of the pause), which 3.7.3-3 was built without.
 
-Like VideoLAN's, it is built with `--disable-gpl`, and `build.sh` fails when the result holds no libbluray, no AVS+ decoder or a GPL string.
+Like VideoLAN's, it is built with `--disable-gpl`, and `build.sh` fails when the result holds no libbluray, no AVS+ decoder, no TrueHD decoder or a GPL string.
 
 | | |
 | --- | --- |
-| Artifacts | `MobileVLCKit-3.7.3-3.tar.xz` (iOS: arm64, and arm64 and x86_64 for the simulator), `TVVLCKit-3.7.3-3.tar.xz` (tvOS: arm64, and arm64 and x86_64 for the simulator) and `VLCKit-3.7.3-3.tar.xz` (the Mac: arm64 and x86_64), on this repository's release `vlckit-3.7.3-3` |
-| SHA-256 | `7057adaa5d647668a025e37d921390b1ac23879d43b860458372c2c362518955` (MobileVLCKit), `8fb55967ab3e69723752728fae68860f254419f49203d1c9d2d81915dcc79d24` (TVVLCKit), `a0ec33ef13a10b52ad818cae588180ae4fedaea964e70e621768150ba1ddf761` (VLCKit) |
+| Artifacts | `MobileVLCKit-3.7.3-4.tar.xz` (iOS: arm64, and arm64 and x86_64 for the simulator), `TVVLCKit-3.7.3-4.tar.xz` (tvOS: arm64, and arm64 and x86_64 for the simulator) and `VLCKit-3.7.3-4.tar.xz` (the Mac: arm64 and x86_64), on this repository's release `vlckit-3.7.3-4` (earlier versions stay on their own releases) |
+| SHA-256 | `e4b8a6a954687d16c5eec5fd55bbdc10eb11dd1d608e3f1dc827b2570ec978d2` (MobileVLCKit), `b0a4da146e978b61eb10b8c3c729c9771c014d6e686574a20074d7af8f5853fe` (TVVLCKit), `4d1862e0f1e97ffcfa2ae212c8afa6ffe69605f671dfbd6702f21f3c8a3253dc` (VLCKit) |
 | Licence | LGPL-2.1-or-later (`COPYING.LGPL-2.1`) |
 | Source | https://code.videolan.org/videolan/VLCKit (tag `3.7.3`), and the VLC commit and patches that tag's `buildMobileVLCKit.sh` fetches and applies, with `vlckit/vlc/`'s and `vlc/`'s |
 | Recipe | `vlckit/build.sh`, which needs macOS with Xcode and the tools its header lists; it is the exact script that makes the archives |

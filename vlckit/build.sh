@@ -5,8 +5,9 @@
 # buildMobileVLCKit.patch turns libbluray on and sets the apps' own deployment targets, which current Xcode needs (the
 # Apple TV's is TVVLCKit, VLCKit 3's own framework for tvOS);
 # vlc/ holds the patches VLCKit's script applies to VLC beside its own: libbluray building for iOS and tvOS, subtitles
-# blended over a hardware decoder's picture once it is converted, blend taking P010, and libass's `ssa-font`, the font
-# the apps ship; ../vlc/ holds the ones both libVLC builds apply (FFmpeg's AVS+ decoder).
+# blended over a hardware decoder's picture once it is converted, blend taking P010, libass's `ssa-font`, the font
+# the apps ship, and FFmpeg's TrueHD and MLP decoders, which VLCKit's own patches turn off; ../vlc/ holds the ones both
+# libVLC builds apply (FFmpeg's AVS+ decoder, and a decoder made while paused told of the pause).
 # Writes one tar.xz per platform; what yonto-app/libvlc-lgpl's releases keep (which fetch-vlckit.sh pins) are copies.
 #
 #   tools/vlckit/build.sh [outdir]      outdir defaults to build/vlckit, and the sources go in build/vlckit-src,
@@ -16,7 +17,7 @@
 set -eu
 
 VLCKIT_TAG=3.7.3
-VERSION=3.7.3-3
+VERSION=3.7.3-4
 
 here="$(cd "$(dirname "$0")" && pwd)"
 mkdir -p "${1:-build/vlckit}" "${VLCKIT_WORK:-build/vlckit-src}"
@@ -40,6 +41,7 @@ check() {
   binary="$1"
   strings -a "$binary" | grep -q 'BluRay demuxer' || { echo "$binary has no libbluray" >&2; exit 1; }
   strings -a "$binary" | grep -q 'Enhanced field coded P picture' || { echo "$binary has no AVS+ decoder" >&2; exit 1; }
+  strings -a "$binary" | grep -q 'MLP only supports up to 2 substreams' || { echo "$binary has no TrueHD decoder" >&2; exit 1; }
   if strings -a "$binary" | grep -q -E 'x264 advanced options|DVDOpen'; then
     echo "$binary holds GPL code" >&2
     exit 1
