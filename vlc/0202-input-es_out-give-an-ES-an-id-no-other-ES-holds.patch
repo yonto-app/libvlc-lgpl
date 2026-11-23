@@ -1,0 +1,42 @@
+From b433d89081a527390a1619506e7dbd8f440406c5 Mon Sep 17 00:00:00 2001
+Message-Id: <b433d89081a527390a1619506e7dbd8f440406c5.1795416302.git.336298264+yonto-app@users.noreply.github.com>
+From: yonto-app <336298264+yonto-app@users.noreply.github.com>
+Date: Mon, 23 Nov 2026 19:45:02 +1300
+Subject: [PATCH] input: es_out: give an ES an id no other ES holds
+
+An ES whose demuxer gives it no id takes the count of ES added so far.
+A demuxer that numbers its own ES from its streams (asf, from 1) can
+already hold that number, so a subtitle file added beside a WMV took
+the audio track's id. Selecting it by that id (spu-es, or a slave
+added with select) finds the audio ES first, which is already
+selected, so the subtitles were listed and reported as selected but
+never decoded.
+
+The counted id now moves past any id an ES already holds.
+
+Message-Id: <b433d89081a527390a1619506e7dbd8f440406c5.1795416302.git.336298264+yonto-app@users.noreply.github.com>
+---
+ src/input/es_out.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/src/input/es_out.c b/src/input/es_out.c
+--- a/src/input/es_out.c
++++ b/src/input/es_out.c
+@@ -1557,7 +1557,14 @@ static es_out_id_t *EsOutAddSlave( es_out_t *out, const es_format_t *fmt, es_out_id_t *p_master )
+     es->p_pgrm = p_pgrm;
+     es_format_Copy( &es->fmt, fmt );
+     if( es->fmt.i_id < 0 )
++    {
++        /* A demuxer that numbers its own ES (asf) can already hold the
++         * counted id, and an ES given it could never be selected: an id
++         * finds the first ES that has it. */
+         es->fmt.i_id = p_sys->i_id;
++        while( EsOutGetFromID( out, es->fmt.i_id ) != NULL )
++            es->fmt.i_id++;
++    }
+     if( !es->fmt.i_original_fourcc )
+         es->fmt.i_original_fourcc = es->fmt.i_codec;
+ 
+-- 
+2.55.0
+

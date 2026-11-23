@@ -7,12 +7,13 @@ Since 3.6.5-2 it has one change, which the VLCKit below has too: FFmpeg's own de
 Since 3.6.5-3 it has a second: a decoder made while the input is paused is told of the pause, so a paused title that is left and come back to draws its picture (`vlc/0201-…patch`, adapted from VLC master's `44a4e0b0b30dd1080ac1003ba50aa4d98ab88c6d`).
 The VLCKit archives below have it since 3.7.3-4.
 Since 3.6.5-4 it has a third, Android's alone (`libvlc/vlc/0300-…patch`, which VLCKit does not take, having no AudioTrack): VideoLAN's own `f1369aeb95f89d1afb8ebec4403c30b45ff3e863` from VLC 3.0.x, which keeps a DynamicsProcessing effect Android refuses from marking the AudioTrack failed. Without it a 5.1 track played on a DIRECT output, where Android refuses the effect, is never written and plays silent.
+Since 3.6.5-5 it has a fourth: a track VLC numbers itself (a subtitle file added beside the video) skips an id a reader already gave another track, so a WMV, whose reader numbers its own tracks from 1, no longer gives its subtitle file the audio's id, which made picking the subtitle pick the audio and draw nothing (`vlc/0202-…patch`). The VLCKit below does not have it yet.
 `libvlc/build.sh` fails when the result holds a GPL string, no AVS+ decoder or no AudioTrack fix, or when a patch in `vlc/` or `libvlc/vlc/` was not applied.
 
 | | |
 | --- | --- |
-| Artifact | `app.yonto.vendor:libvlc-lgpl:3.6.5-4` (AAR; arm64-v8a and armeabi-v7a); 3.6.5-3, without the third change, 3.6.5-2, without the second, and 3.6.5-1, without any, stay beside it |
-| SHA-256 | `e998cf2265a7f0f82556baceaa8130a73a13fcb2433097f6effc2ea2506b6572` |
+| Artifact | `app.yonto.vendor:libvlc-lgpl:3.6.5-5` (AAR; arm64-v8a and armeabi-v7a); 3.6.5-4, without the fourth change, 3.6.5-3, without the third, 3.6.5-2, without the second, and 3.6.5-1, without any, stay beside it |
+| SHA-256 | `588ee21798cc9049e0ddd69ddad11763405966be48c1ceaa4519f9c74df41db7` |
 | Licence | LGPL-2.1-or-later (`COPYING.LGPL-2.1`) |
 | Source | https://code.videolan.org/videolan/vlc-android (tag `libvlc-3.6.5`), https://code.videolan.org/videolan/libvlcjni (branch `libvlcjni-3.x`, commit `965e8648717076654f463ae64ee1d008d7ff282d`), and the VLC commit `c9dde25a62c4612d71250c4eb845154e0ea9e13e` that commit fetches, with `vlc/`'s and `libvlc/vlc/`'s patches |
 | Recipe | `libvlc/build.sh`, which needs the Android SDK, NDK 28 and NDK 21, JDK 17 and the tools its header lists; it is the exact script that makes the AAR |

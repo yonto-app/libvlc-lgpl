@@ -2,7 +2,8 @@
 # Builds the libVLC the Android apps ship, from VideoLAN's own sources with every GPL library left out (no x264,
 # x265, libdvdread or live555; FFmpeg without --enable-gpl), so the engine is LGPL-2.1 and nothing else
 # (docs/design/2026-10-04-files-and-network-libraries.md), plus ../vlc/'s patches, which both libVLC builds apply
-# (FFmpeg's AVS+ decoder, and a decoder made while paused told of the pause), and vlc/'s, which only this one does
+# (FFmpeg's AVS+ decoder, a decoder made while paused told of the pause, and a subtitle file given an ES id no other
+# track holds, without which one beside a WMV could never be selected), and vlc/'s, which only this one does
 # (VideoLAN's fix that keeps a refused DynamicsProcessing from silencing the AudioTrack, until libvlcjni's VLC carries it).
 # Writes a Maven repository holding the AAR: -Pyonto.libvlcRepo=<it> tries it, and what is kept at yonto-app/libvlc-lgpl
 # (which settings.gradle.kts pins) is a copy of it.
@@ -19,7 +20,7 @@ set -eu
 VLC_ANDROID_TAG=libvlc-3.6.5
 LIBVLCJNI_BRANCH=libvlcjni-3.x
 LIBVLCJNI_HASH=965e8648717076654f463ae64ee1d008d7ff282d
-VERSION=3.6.5-4
+VERSION=3.6.5-5
 : "${ANDROID_SDK:?set ANDROID_SDK}"
 : "${NDK_ARM64:?set NDK_ARM64 to NDK 28}"
 : "${NDK_ARMV7:?set NDK_ARMV7 to NDK 21}"
@@ -44,27 +45,41 @@ export ac_cv_prog_cc_c23=no
 export PKG_CONFIG_IGNORE_CONFLICTS=1
 export ANDROID_SDK VLC_LIBJNI_PATH="$work/libvlcjni"
 
+# Each patch must be in VLC as it is here, not only by its Message-Id: a work folder cloned before a patch was added or
+# changed never copies it again, and libvlcjni's own check reads the Message-Id alone.
+check_patches() {
+  for patch in "$here"/../vlc/*.patch "$here"/vlc/*.patch; do
+    id="$(sed -n 's/^Message-Id: <\(.*\)>$/\1/p' "$patch" | head -n 1)"
+    commit="$(git -C "$work/libvlcjni/vlc" log --format=%H --fixed-strings --grep="$id" | head -n 1)"
+    if [ -z "$commit" ] || [ "$(git -C "$work/libvlcjni/vlc" -c diff.suppressBlankEmpty=false diff-tree -p "$commit" | git patch-id --stable | cut -d' ' -f1)" != \
+        "$(git patch-id --stable < "$patch" | cut -d' ' -f1)" ]; then
+      echo "VLC in $work/libvlcjni does not hold $(basename "$patch") as it is now: remove $work/libvlcjni and build again" >&2
+      exit 1
+    fi
+  done
+}
+
+compile() {
+  ANDROID_NDK="$2" sh -c "cd vlc-android && sh buildsystem/compile.sh -l -a $1 --license a"
+}
+
+# A failure here is fatal, a patch that no longer applies included, but for the first build of an ABI: libgcrypt's pkg-config
+# file requires a gpg-error.pc that libgpg-error's contrib does not install, which is written and the build run again.
 build() {
   abi="$1" ndk="$2" tuple="$3"
-  ANDROID_NDK="$ndk" sh -c "cd vlc-android && sh buildsystem/compile.sh -l -a $abi --license a" || true
-  # libgcrypt's pkg-config file requires a gpg-error.pc that libgpg-error's contrib does not install.
+  compile "$abi" "$ndk" && return
   prefix="$work/libvlcjni/vlc/contrib/$tuple"
-  if [ -d "$prefix/lib/pkgconfig" ] && [ ! -f "$prefix/lib/pkgconfig/gpg-error.pc" ]; then
-    printf 'prefix=%s\nlibdir=${prefix}/lib\nincludedir=${prefix}/include\n\nName: gpg-error\nDescription: GnuPG error library\nVersion: 1.50\nCflags: -I${includedir}\nLibs: -L${libdir} -lgpg-error\n' "$prefix" > "$prefix/lib/pkgconfig/gpg-error.pc"
-    ANDROID_NDK="$ndk" sh -c "cd vlc-android && sh buildsystem/compile.sh -l -a $abi --license a"
-  fi
-}
-build arm64-v8a "$NDK_ARM64" aarch64-linux-android
-build armeabi-v7a "$NDK_ARMV7" arm-linux-androideabi
-
-# A work folder cloned before a patch was added never copies it, and would build without it.
-for patch in "$here"/../vlc/*.patch "$here"/vlc/*.patch; do
-  id="$(sed -n 's/^Message-Id: <\(.*\)>$/\1/p' "$patch" | head -n 1)"
-  if ! git -C "$work/libvlcjni/vlc" log --format=%H --fixed-strings --grep="$id" | grep -q .; then
-    echo "built without $(basename "$patch"): remove $work/libvlcjni and build again" >&2
+  if [ ! -d "$prefix/lib/pkgconfig" ] || [ -f "$prefix/lib/pkgconfig/gpg-error.pc" ]; then
+    echo "$abi did not build" >&2
     exit 1
   fi
-done
+  printf 'prefix=%s\nlibdir=${prefix}/lib\nincludedir=${prefix}/include\n\nName: gpg-error\nDescription: GnuPG error library\nVersion: 1.50\nCflags: -I${includedir}\nLibs: -L${libdir} -lgpg-error\n' "$prefix" > "$prefix/lib/pkgconfig/gpg-error.pc"
+  compile "$abi" "$ndk"
+}
+[ -d "$work/libvlcjni/vlc" ] && check_patches
+build arm64-v8a "$NDK_ARM64" aarch64-linux-android
+build armeabi-v7a "$NDK_ARMV7" arm-linux-androideabi
+check_patches
 
 aar="$work/libvlcjni/libvlc/build/outputs/aar/libvlc-dev.aar"
 for abi in arm64-v8a armeabi-v7a; do
