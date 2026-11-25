@@ -1,0 +1,33 @@
+From 01501045785889f265c5aa615cc5f27895674478 Mon Sep 17 00:00:00 2001
+From: yonto-app <336298264+yonto-app@users.noreply.github.com>
+Date: Wed, 25 Nov 2026 20:51:00 +0000
+Subject: [PATCH] vmem: offer the format callback the picture's visible size
+Message-Id: <01501045785889f265c5aa615cc5f27895674478.vmem.336298264+yonto-app@users.noreply.github.com>
+
+A software decoder pads its pictures to the size its code works in, 258
+lines for one of 240, and the callback was given that size as the
+picture's. A caller that kept it, as the documentation lets it, got the
+picture scaled up to it and so out of its shape.
+---
+ modules/video_output/vmem.c | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/modules/video_output/vmem.c b/modules/video_output/vmem.c
+index a046d7c33e..341a59c907 100644
+--- a/modules/video_output/vmem.c
++++ b/modules/video_output/vmem.c
+@@ -142,6 +142,11 @@ static int Open(vlc_object_t *object)
+     if (setup != NULL) {
+         char chroma[5];
+ 
++        /* The picture, not the lines and columns its decoder pads it with,
++         * which the callback would take for the picture's own size. */
++        fmt.i_width = fmt.i_visible_width;
++        fmt.i_height = fmt.i_visible_height;
++
+         memcpy(chroma, &fmt.i_chroma, 4);
+         chroma[4] = '\0';
+         memset(sys->pitches, 0, sizeof(sys->pitches));
+-- 
+2.30.2
+

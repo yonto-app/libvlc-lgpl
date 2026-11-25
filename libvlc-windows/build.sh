@@ -2,9 +2,11 @@
 # Builds the libVLC the Windows app ships, for x64: VideoLAN's own VLC sources at the commit tools/libvlc/build.sh's
 # libvlcjni pins, cross-compiled with mingw-w64 in the Docker image VLC's own CI builds win64 3.0 in, as
 # extras/package/win32/build.sh builds it, plus ../vlc/'s patches, which every libVLC build applies (FFmpeg's AVS+
-# decoder, and a decoder made while paused told of the pause), and vlc/'s, which only this one does (deinterlace
-# without Yadif, whose code is FFmpeg's GPL filter, and the plugins cache trusted by a plugin's size alone, since an
-# MSIX installs every file with the time it was installed) (docs/design/2026-11-17-yonto-on-windows.md).
+# decoder, a decoder made while paused told of the pause, and a subtitle file given an ES id no other track holds,
+# which 3.0.22-rc1-2 was built before), and ../vlc/desktop/'s, which this and Linux's do (deinterlace
+# without Yadif, whose code is FFmpeg's GPL filter, the plugins cache trusted by a plugin's size alone, since an
+# MSIX installs every file with the time it was installed, and the format callback offered a picture's visible size, not
+# the one its decoder pads it to, which 3.0.22-rc1-2, the one published, was built before) (docs/design/2026-11-17-yonto-on-windows.md).
 # Every GPL library is left out as on Android (contribs with --disable-gpl --disable-gnuv3 --enable-ad-clauses, so
 # FFmpeg without --enable-gpl, and no x264, x265, a52, dca, faad2, mad, libmpeg2, libdvdread, libdvdnav, libdvdcss,
 # live555, GnuTLS or libzvbi), and libbluray kept, so a Blu-ray ISO plays.
@@ -23,7 +25,7 @@
 set -eu
 
 VLC_HASH=c9dde25a62c4612d71250c4eb845154e0ea9e13e
-VERSION=3.0.22-rc1-2
+VERSION=3.0.22-rc1-3
 IMAGE=registry.videolan.org/vlc-debian-win64:20221023193231
 TRIPLET=x86_64-w64-mingw32
 
@@ -42,33 +44,12 @@ if [ "${1:-}" != --inside ]; then
 fi
 
 jobs="$(nproc)"
-patches="$(printf "%s\n" /tools/vlc/*.patch /tools/libvlc-windows/vlc/*.patch)"
+patches="$(printf "%s\n" /tools/vlc/*.patch /tools/vlc/desktop/*.patch)"
 vlc=/work/vlc
 prefix=/work/install
 
-# Each patch must be in VLC as it is here, not only by its Message-Id: a volume cloned before a patch was added or
-# changed never applies it again.
-check_patches() {
-  for patch in $patches; do
-    id="$(sed -n 's/^Message-Id: <\(.*\)>$/\1/p' "$patch" | head -n 1)"
-    commit="$(git -C "$vlc" log --format=%H --fixed-strings --grep="$id" | head -n 1)"
-    if [ -z "$commit" ] || [ "$(git -C "$vlc" -c diff.suppressBlankEmpty=false diff-tree -p "$commit" | git patch-id --stable | cut -d' ' -f1)" != \
-        "$(git patch-id --stable < "$patch" | cut -d' ' -f1)" ]; then
-      echo "VLC in the volume does not hold $(basename "$patch") as it is now: remove the volume and build again" >&2
-      exit 1
-    fi
-  done
-}
-
-if [ ! -d "$vlc" ]; then
-  rm -rf "$vlc.partial"
-  git clone --single-branch --branch 3.0.x https://code.videolan.org/videolan/vlc.git "$vlc.partial"
-  git -C "$vlc.partial" reset --hard "$VLC_HASH"
-  git -C "$vlc.partial" -c user.name=yonto-app -c user.email=336298264+yonto-app@users.noreply.github.com \
-    am --message-id $patches
-  mv "$vlc.partial" "$vlc"
-fi
-check_patches
+. /tools/vlc/build-common.sh
+clone_vlc "$VLC_HASH"
 cd "$vlc"
 
 (cd extras/tools && NEEDED=meson ./bootstrap && make -j"$jobs")
@@ -88,30 +69,10 @@ printf 'CPPFLAGS := %s\nCFLAGS := %s\nCXXFLAGS := %s\nPKG_CONFIG := pkg-config\n
 ../bootstrap --host="$TRIPLET" --prefix="../$TRIPLET" --disable-gpl --disable-gnuv3 --enable-ad-clauses \
   --disable-lua --disable-luac --disable-asdcplib --disable-zvbi --disable-qt --disable-qtsvg --disable-qtdeclarative \
   --disable-qtgraphicaleffects --disable-qtquickcontrols2
-make list
-# A download cut short by an earlier run is fetched again.
-for tarball in ../tarballs/*.tar.* ../tarballs/*.tgz ../tarballs/*.zip; do
-  [ -f "$tarball" ] || continue
-  sums="$(grep -h " $(basename "$tarball")\$" ../src/*/SHA512SUMS || true)"
-  if [ -n "$sums" ] && ! (cd ../tarballs && echo "$sums" | sha512sum --check --status); then
-    rm "$tarball"
-  fi
-done
-# The contribs' SourceForge mirror no longer resolves, and a stalled mirror would hang the build rather than fail it.
-sf=SF=https://downloads.sourceforge.net/project
-mkdir -p /work/curl
-printf 'speed-limit = 4096\nspeed-time = 60\nconnect-timeout = 30\n' > /work/curl/.curlrc
-export CURL_HOME=/work/curl
-make -j"$jobs" "$sf" fetch
-make -j"$jobs" "$sf" -k || make -j1 "$sf"
+make_contribs
 cd ../..
 
-for gpl in a52 dca dvdread dvdnav dvdcss faad libmpeg2 mad x264 x265 x262 sidplay2 samplerate vncclient postproc gnutls nettle zvbi; do
-  if ls "contrib/$TRIPLET/lib/lib$gpl"* > /dev/null 2>&1; then
-    echo "the contribs hold $gpl, which is GPL or LGPLv3" >&2
-    exit 1
-  fi
-done
+refuse_gpl_contribs "contrib/$TRIPLET"
 
 [ -f configure ] || ./bootstrap
 
@@ -138,72 +99,24 @@ make -j"$jobs"
 rm -rf "$prefix" package-win-install vlc-*/sdk
 make package-win-sdk
 
-# A file is GPL when it names the GPL and neither the LGPL nor the GNU Library GPL.
-is_gpl() {
-  [ -f "$1" ] && grep -q -E 'GNU General Public License|GNU GPL' "$1" && ! grep -q -E 'Lesser General Public|Library General Public|LGPL' "$1"
-}
-
-# The sources a library in modules/ is made from, its in-tree convenience libraries' included.
-sources_of() {
-  canonical="$(echo "$1" | sed 's/[^a-zA-Z0-9_]/_/g')"
-  vars="$(make -s -C modules -f Makefile -f /dev/stdin print <<MAKE
-print: ; @echo \$(${canonical}_SOURCES) \$(nodist_${canonical}_SOURCES) '|' \$(${canonical}_LIBADD)
-MAKE
-)"
-  for source in ${vars%%|*}; do
-    echo "$vlc/modules/$source"
-  done
-  for lib in ${vars#*|}; do
-    case "$lib" in
-      *.la) [ "$(basename "$lib")" = "$lib" ] && sources_of "$lib" ;;
-    esac
-  done
-}
-
 stage=/work/stage
 rm -rf "$stage"
 mkdir -p "$stage/plugins"
 cp "$prefix/bin/libvlc.dll" "$prefix/bin/libvlccore.dll" "$prefix/lib/vlc/vlc-cache-gen.exe" "$stage/"
 cp -r vlc-*/sdk "$stage/sdk"
 cp ../COPYING.LIB "$stage/"
-left_out=""
-for dll in "$prefix"/lib/vlc/plugins/*/*.dll; do
-  name="$(basename "$dll" .dll)"
-  gpl=""
-  for source in $(sources_of "$name.la"); do
-    is_gpl "$source" && gpl="$gpl ${source#"$vlc"/}"
-  done
-  if [ -n "$gpl" ]; then
-    left_out="$left_out
-  $name:$gpl"
-    continue
-  fi
-  mkdir -p "$stage/plugins/$(basename "$(dirname "$dll")")"
-  cp "$dll" "$stage/plugins/$(basename "$(dirname "$dll")")/"
-done
-for source in $(cd .. && ls src/*.c src/*/*.c lib/*.c); do
-  if is_gpl "../$source"; then
-    echo "libvlccore or libvlc is built from $source, which is GPL" >&2
-    exit 1
-  fi
-done
+copy_lgpl_plugins "$prefix/lib/vlc/plugins" "$stage/plugins" dll
+refuse_gpl_core
 find "$stage" \( -name '*.dll' -o -name '*.exe' \) -exec "$TRIPLET-strip" --strip-unneeded {} +
 
-all="$(find "$stage" -name '*.dll')"
-# shellcheck disable=SC2086
-if strings -a $all | grep -q -E 'x264 advanced options|live555\.cpp|DVDOpen|--enable-gpl'; then
-  echo "the DLLs still hold GPL code" >&2
-  exit 1
-fi
-avcodec="$stage/plugins/codec/libavcodec_plugin.dll"
-strings -a "$avcodec" | grep -q 'Enhanced field coded P picture' || { echo "libavcodec_plugin.dll has no AVS+ decoder" >&2; exit 1; }
-strings -a "$avcodec" | grep -q 'LGPL version 2.1 or later' || { echo "FFmpeg is not LGPL-2.1" >&2; exit 1; }
+# shellcheck disable=SC2046
+refuse_gpl_binaries $(find "$stage" -name '*.dll')
+check_ffmpeg "$stage/plugins/codec/libavcodec_plugin.dll"
 for plugin in access/liblibbluray codec/libd3d11va codec/liblibass demux/libmkv video_output/libdirect3d11 \
     video_filter/libdeinterlace; do
   [ -f "$stage/plugins/${plugin}_plugin.dll" ] || { echo "the plugins have no $plugin" >&2; exit 1; }
 done
 
-echo "Left out, as built from GPL sources:$left_out"
 zip="/out/libvlc-windows-x64-$VERSION.zip"
 rm -f "$zip"
 (cd "$stage" && zip -q -r -9 "$zip" .)
