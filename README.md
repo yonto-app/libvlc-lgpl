@@ -57,7 +57,7 @@ This is libVLC 3.0.22-rc1 for Windows x64, built from VideoLAN's own VLC sources
 The contribs are built with `--disable-gpl --disable-gnuv3`, so no GPL or LGPLv3 library is in it (no x264, x265, a52, dca, faad2, mad, libmpeg2, libdvdread, libdvdnav, libdvdcss, live555, GnuTLS or libzvbi) and FFmpeg is configured without `--enable-gpl`; libbluray is kept, so a Blu-ray disc image plays.
 Unlike Android's single `libvlc.so`, each VLC module is its own DLL, and some of VLC 3's own modules are GPL (Lua, the Real RTSP access and demuxer, the playlist exporters, the file logger, DirectShow and BDA capture), so every plugin built from a GPL source file is left out, by a scan of the sources each one is made from.
 It has the two changes in `vlc/` that the Android build has (FFmpeg's AVS+ decoder, and a decoder made while paused told of the pause), and two of its own: `vlc/desktop/0400-…patch` builds the deinterlace plugin without Yadif, whose code is FFmpeg's GPL filter, falling back to its automatic mode when Yadif is asked for, and `vlc/desktop/0401-…patch` has libVLC trust its plugins cache by a plugin's size alone, since a Windows app package (MSIX) installs every file with the time it was installed, which would otherwise leave every plugin opened on each start.
-Since 3.0.22-rc1-3 it has a fifth, which the Linux build has too: `vlc/desktop/0402-…patch` has `vmem` offer its format callback a picture's visible size rather than the size its decoder pads it to, so a picture drawn from memory keeps its shape.
+Since 3.0.22-rc1-3 it also has the Android build's third, `vlc/0202-…patch` (a subtitle file given an id no other track holds), and a fifth of its own, which the Linux build has too: `vlc/desktop/0402-…patch` has `vmem` offer its format callback a picture's visible size rather than the size its decoder pads it to, so a picture drawn from memory keeps its shape.
 `libvlc-windows/build.sh` fails when a GPL or LGPLv3 contrib is in the result, or when a patch was not applied.
 
 | | |
@@ -65,7 +65,7 @@ Since 3.0.22-rc1-3 it has a fifth, which the Linux build has too: `vlc/desktop/0
 | Artifact | `libvlc-windows-x64-3.0.22-rc1-3.zip` (`libvlc.dll`, `libvlccore.dll`, `plugins/`, `sdk/` with the headers and import libraries, and `vlc-cache-gen.exe`), on this repository's release `libvlc-windows-3.0.22-rc1-3` |
 | SHA-256 | `888375b0026efff7aeff68cbdad4272b439ce3dba9e8bed0038a41033002c142` |
 | Licence | LGPL-2.1-or-later (`COPYING.LGPL-2.1`) |
-| Source | https://code.videolan.org/videolan/vlc (branch `3.0.x`, commit `c9dde25a62c4612d71250c4eb845154e0ea9e13e`), with `vlc/`'s and `vlc/desktop/`'s 0400, 0401 and 0402 (in `libvlc-windows/vlc/` at the release's tag) |
+| Source | https://code.videolan.org/videolan/vlc (branch `3.0.x`, commit `c9dde25a62c4612d71250c4eb845154e0ea9e13e`), with `vlc/`'s 0200, 0201 and 0202 and `vlc/desktop/`'s 0400, 0401 and 0402 (in `libvlc-windows/vlc/` at the release's tag) |
 | Recipe | `libvlc-windows/build.sh`, which needs Docker able to run linux/amd64 images; it is the exact script that makes the zip |
 
 Yonto Player carries the libraries as the DLLs `libvlc.dll` and `libvlccore.dll` and the plugins beside them, not linked into its own code.
