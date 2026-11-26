@@ -90,3 +90,16 @@ What both desktop scripts share (VLC's sources and patches, the contribs, and th
 
 Yonto Player carries the libraries as the shared `libvlc.so.5` and `libvlccore.so.9` and the plugins beside them, not linked into its own code.
 Anyone may replace them with a build of their own from the recipe above.
+
+# The AppImage runtime's source, for Yonto Player on Linux
+
+Yonto Player's Linux AppImage starts with the AppImage project's type2 runtime, release 20251108, used exactly as the project publishes it (`runtime-x86_64`, SHA-256 `2fca8b443c92510f1483a883f60061ad09b46b978b2631c807cd873a47ec260d`).
+It is one program, statically linked with libfuse 3.15.0, which is LGPL-2.1-only, and with musl, mimalloc, squashfuse, zstd and zlib, which are under permissive licences.
+Its source is kept here, on the release `appimage-runtime-20251108`, so it is offered from the same place as Yonto Player's other LGPL code.
+
+| | |
+| --- | --- |
+| `type2-runtime-20251108.tar.gz` | The runtime's source at its tag 20251108, from https://github.com/AppImage/type2-runtime, with its build scripts and `patches/libfuse/mount.c.diff`, the one change it makes to libfuse. SHA-256 `4c4f6df4647c9f01f871d7edd3716d8aeeffda9d22ffbebe3fccd95a6ab52c95` |
+| `fuse-3.15.0.tar.xz` | libfuse 3.15.0 as its project released it, the archive the runtime's `scripts/common/install-dependencies.sh` downloads and checks. SHA-256 `70589cfd5e1cff7ccd6ac91c86c01be340b227285c5e200baa284e401eea2ca0` |
+| Licence | LGPL-2.1-only for libfuse (`COPYING.LGPL-2.1`); MIT for the runtime (its `LICENSE`) |
+| Recipe | The runtime's `BUILD.md` and `scripts/`, which build it in Alpine Linux with libfuse patched and linked statically; anyone may build it again with a libfuse of their own and put it in place of the runtime at the start of the AppImage |
