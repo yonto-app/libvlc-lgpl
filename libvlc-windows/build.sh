@@ -6,7 +6,9 @@
 # which 3.0.22-rc1-2 was built before), and ../vlc/desktop/'s, which this and Linux's do (deinterlace
 # without Yadif, whose code is FFmpeg's GPL filter, the plugins cache trusted by a plugin's size alone, since an
 # MSIX installs every file with the time it was installed, and the format callback offered a picture's visible size, not
-# the one its decoder pads it to, which 3.0.22-rc1-2, the one published, was built before) (docs/design/2026-11-17-yonto-on-windows.md).
+# the one its decoder pads it to, which 3.0.22-rc1-2 was built before, and each video access unit told to the app with
+# the one each picture came from, which 3.0.22-rc1-4 added for Dolby Vision profile 5,
+# docs/design/2026-11-27-dolby-vision-5-on-the-desktop.md) (docs/design/2026-11-17-yonto-on-windows.md).
 # Every GPL library is left out as on Android (contribs with --disable-gpl --disable-gnuv3 --enable-ad-clauses, so
 # FFmpeg without --enable-gpl, and no x264, x265, a52, dca, faad2, mad, libmpeg2, libdvdread, libdvdnav, libdvdcss,
 # live555, GnuTLS or libzvbi), and libbluray kept, so a Blu-ray ISO plays.
@@ -25,7 +27,7 @@
 set -eu
 
 VLC_HASH=c9dde25a62c4612d71250c4eb845154e0ea9e13e
-VERSION=3.0.22-rc1-3
+VERSION=3.0.22-rc1-4
 IMAGE=registry.videolan.org/vlc-debian-win64:20221023193231
 TRIPLET=x86_64-w64-mingw32
 

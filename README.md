@@ -58,14 +58,15 @@ The contribs are built with `--disable-gpl --disable-gnuv3`, so no GPL or LGPLv3
 Unlike Android's single `libvlc.so`, each VLC module is its own DLL, and some of VLC 3's own modules are GPL (Lua, the Real RTSP access and demuxer, the playlist exporters, the file logger, DirectShow and BDA capture), so every plugin built from a GPL source file is left out, by a scan of the sources each one is made from.
 It has the two changes in `vlc/` that the Android build has (FFmpeg's AVS+ decoder, and a decoder made while paused told of the pause), and two of its own: `vlc/desktop/0400-…patch` builds the deinterlace plugin without Yadif, whose code is FFmpeg's GPL filter, falling back to its automatic mode when Yadif is asked for, and `vlc/desktop/0401-…patch` has libVLC trust its plugins cache by a plugin's size alone, since a Windows app package (MSIX) installs every file with the time it was installed, which would otherwise leave every plugin opened on each start.
 Since 3.0.22-rc1-3 it also has the Android build's third, `vlc/0202-…patch` (a subtitle file given an id no other track holds), and a fifth of its own, which the Linux build has too: `vlc/desktop/0402-…patch` has `vmem` offer its format callback a picture's visible size rather than the size its decoder pads it to, so a picture drawn from memory keeps its shape.
+Since 3.0.22-rc1-4 it has a sixth, which the Linux build has too: `vlc/desktop/0403-…patch` adds `libvlc_video_set_access_unit_callbacks()`, which tells a `vmem` caller of each video access unit as avcodec is given it and of the access unit each picture was decoded from, so Yonto Player can apply a Dolby Vision profile 5 picture's own RPU, which FFmpeg 4.4 drops.
 `libvlc-windows/build.sh` fails when a GPL or LGPLv3 contrib is in the result, or when a patch was not applied.
 
 | | |
 | --- | --- |
-| Artifact | `libvlc-windows-x64-3.0.22-rc1-3.zip` (`libvlc.dll`, `libvlccore.dll`, `plugins/`, `sdk/` with the headers and import libraries, and `vlc-cache-gen.exe`), on this repository's release `libvlc-windows-3.0.22-rc1-3` |
-| SHA-256 | `888375b0026efff7aeff68cbdad4272b439ce3dba9e8bed0038a41033002c142` |
+| Artifact | `libvlc-windows-x64-3.0.22-rc1-4.zip` (`libvlc.dll`, `libvlccore.dll`, `plugins/`, `sdk/` with the headers and import libraries, and `vlc-cache-gen.exe`), on this repository's release `libvlc-windows-3.0.22-rc1-4` |
+| SHA-256 | `0415023276fe2e75e07109474fa9d4c20df224b41fae69d87e48f49221869d65` |
 | Licence | LGPL-2.1-or-later (`COPYING.LGPL-2.1`) |
-| Source | https://code.videolan.org/videolan/vlc (branch `3.0.x`, commit `c9dde25a62c4612d71250c4eb845154e0ea9e13e`), with `vlc/`'s 0200, 0201 and 0202 and `vlc/desktop/`'s 0400, 0401 and 0402 (in `libvlc-windows/vlc/` at the release's tag) |
+| Source | https://code.videolan.org/videolan/vlc (branch `3.0.x`, commit `c9dde25a62c4612d71250c4eb845154e0ea9e13e`), with `vlc/`'s 0200, 0201 and 0202 and `vlc/desktop/`'s 0400, 0401, 0402 and 0403 (in `libvlc-windows/vlc/` at the release's tag) |
 | Recipe | `libvlc-windows/build.sh`, which needs Docker able to run linux/amd64 images; it is the exact script that makes the zip |
 
 Yonto Player carries the libraries as the DLLs `libvlc.dll` and `libvlccore.dll` and the plugins beside them, not linked into its own code.
@@ -77,14 +78,14 @@ This is libVLC 3.0.22-rc1 for Linux x64, from the same VLC commit with the same 
 What belongs to the viewer's system stays the system's and is not in it: X11 and xcb, OpenGL, fontconfig and FreeType, ALSA and PulseAudio, D-Bus, VA-API and VDPAU.
 The codecs, demuxers and libass are VLC's contribs, linked into the plugins.
 libva, libvdpau and xcb's smaller libraries have to match the viewer's system, but FFmpeg and the X11 video output are linked to them, so a copy of each from Debian 11 is in `fallback/` (MIT), which Yonto Player loads only where the system has none.
-Beside the Windows build's changes it has `vlc/desktop/0402-…patch`: VLC's `vmem` offers its format callback a picture's visible size rather than the one its decoder pads it to, which otherwise scaled the picture out of its shape.
+It has the Windows build's changes, `vlc/desktop/0402-…patch` (VLC's `vmem` offers its format callback a picture's visible size rather than the one its decoder pads it to, which otherwise scaled the picture out of its shape) and, since 3.0.22-rc1-2, `vlc/desktop/0403-…patch` (each video access unit told to the app with the one each picture came from) among them.
 What both desktop scripts share (VLC's sources and patches, the contribs, and the scan that leaves out every plugin built from a GPL source) is `vlc/build-common.sh`.
 `libvlc-linux/build.sh` fails when a GPL or LGPLv3 contrib is in the result, a patch was not applied, a plugin holds GPL code, FFmpeg is not LGPL-2.1 or has no AVS+ decoder, a symbol needs a glibc newer than 2.31, or a plugin needs a library that is neither in it nor every desktop's.
 
 | | |
 | --- | --- |
-| Artifact | `libvlc-linux-x64-3.0.22-rc1-1.tar.gz` (`libvlc.so.5`, `libvlccore.so.9`, `vlc/plugins/` with its `plugins.dat`, `vlc/` with the plugins' shared helpers, `fallback/` and `COPYING.LIB`), on this repository's release `libvlc-linux-3.0.22-rc1-1` |
-| SHA-256 | `a634d922465b02ab47846adbcb32926ecba8782b62295b18782ca6d92d990072` |
+| Artifact | `libvlc-linux-x64-3.0.22-rc1-2.tar.gz` (`libvlc.so.5`, `libvlccore.so.9`, `vlc/plugins/` with its `plugins.dat`, `vlc/` with the plugins' shared helpers, `fallback/` and `COPYING.LIB`), on this repository's release `libvlc-linux-3.0.22-rc1-2` |
+| SHA-256 | `98688d9181f4339179745cd511814526017ea452d9dbf74c42dab76c56a991eb` |
 | Licence | LGPL-2.1-or-later (`COPYING.LGPL-2.1`); the `fallback/` libraries are libva's and libvdpau's MIT and X.Org's MIT |
 | Source | https://code.videolan.org/videolan/vlc (branch `3.0.x`, commit `c9dde25a62c4612d71250c4eb845154e0ea9e13e`), with `vlc/`'s and `vlc/desktop/`'s patches; Debian 11's libva, libvdpau, libxcb and libXfixes for `fallback/` |
 | Recipe | `libvlc-linux/build.sh` and its `Dockerfile`, which need Docker able to run linux/amd64 images; it is the exact script that makes the archive |

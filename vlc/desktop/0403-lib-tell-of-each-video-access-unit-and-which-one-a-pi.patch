@@ -1,0 +1,220 @@
+From b721b0909822d214e428dc445c4b24a46b0a8fdf Mon Sep 17 00:00:00 2001
+From: yonto-app <336298264+yonto-app@users.noreply.github.com>
+Date: Fri, 27 Nov 2026 12:00:00 +0000
+Subject: [PATCH] lib: tell of each video access unit and which one a picture
+ is from
+Message-Id: <b721b0909822d214e428dc445c4b24a46b0a8fdf.access-unit.336298264+yonto-app@users.noreply.github.com>
+
+A Dolby Vision profile 5 picture is only right once its RPU is applied,
+and FFmpeg 4.4 drops that NAL. libvlc_video_set_access_unit_callbacks()
+lets a vmem caller see each access unit in decoding order, as avcodec is
+given it, and, as each picture is locked, the date of the access unit it
+was decoded from, which a picture now keeps through the vout's copies.
+---
+ include/vlc/libvlc_media_player.h | 40 +++++++++++++++++++++++++++++++
+ include/vlc_picture.h             |  1 +
+ lib/libvlc.sym                    |  1 +
+ lib/media_player.c                | 10 ++++++++
+ modules/codec/avcodec/video.c     | 12 ++++++++++
+ modules/video_output/vmem.c       |  4 ++++
+ src/misc/picture.c                |  1 +
+ 7 files changed, 69 insertions(+)
+
+diff --git a/include/vlc/libvlc_media_player.h b/include/vlc/libvlc_media_player.h
+index 00ac5d9942..bd16841bac 100644
+--- a/include/vlc/libvlc_media_player.h
++++ b/include/vlc/libvlc_media_player.h
+@@ -456,6 +456,46 @@ void libvlc_video_set_format_callbacks( libvlc_media_player_t *mp,
+                                         libvlc_video_format_cb setup,
+                                         libvlc_video_cleanup_cb cleanup );
+ 
++/**
++ * Callback prototype telling of each video access unit as it goes to the
++ * decoder, in decoding order, while it is still valid.
++ *
++ * \param opaque private pointer as passed to libvlc_video_set_callbacks() [IN]
++ * \param date the access unit's date, as the demuxer gave it, or 0 when it
++ *             has none; 0 with a NULL access unit after a flush [IN]
++ * \param data the access unit as the decoder is given it (Annex B for H.264
++ *             and HEVC), valid during the call only [IN]
++ * \param size its size in bytes [IN]
++ */
++typedef void (*libvlc_video_access_unit_cb)(void *opaque, int64_t date,
++                                            const void *data, size_t size);
++
++/**
++ * Callback prototype telling which access unit a picture was decoded from,
++ * between its lock and its display.
++ *
++ * \param opaque private pointer as passed to libvlc_video_set_callbacks() [IN]
++ * \param picture the picture identifier the lock callback returned [IN]
++ * \param date the date its access unit was told with, or 0 when not known [IN]
++ */
++typedef void (*libvlc_video_picture_date_cb)(void *opaque, void *picture,
++                                             int64_t date);
++
++/**
++ * Tell of each video access unit and of the access unit each picture is
++ * decoded from, which is how data the decoder drops (a Dolby Vision RPU) can
++ * be matched to its picture. This only works in combination with
++ * libvlc_video_set_callbacks(), and with the avcodec decoder.
++ *
++ * \param mp the media player
++ * \param access_unit callback telling of each access unit (or NULL)
++ * \param picture_date callback telling a picture's access unit (or NULL)
++ */
++LIBVLC_API
++void libvlc_video_set_access_unit_callbacks( libvlc_media_player_t *mp,
++                                             libvlc_video_access_unit_cb access_unit,
++                                             libvlc_video_picture_date_cb picture_date );
++
+ /**
+  * Set the NSView handler where the media player should render its video output.
+  *
+diff --git a/include/vlc_picture.h b/include/vlc_picture.h
+index 5d849f1fcb..f1cb91fe03 100644
+--- a/include/vlc_picture.h
++++ b/include/vlc_picture.h
+@@ -91,6 +91,7 @@ struct picture_t
+     bool            b_top_field_first;             /**< which field is first */
+     unsigned int    i_nb_fields;                  /**< # of displayed fields */
+     picture_context_t *context;      /**< video format-specific data pointer */
++    vlc_tick_t      access_unit_date;  /**< its access unit's own date, as the decoder was given it */
+     /**@}*/
+ 
+     /** Private data - the video output plugin might want to put stuff here to
+diff --git a/lib/libvlc.sym b/lib/libvlc.sym
+index 482d95f6f1..998bd06dfe 100644
+--- a/lib/libvlc.sym
++++ b/lib/libvlc.sym
+@@ -268,6 +268,7 @@ libvlc_video_get_width
+ libvlc_video_set_adjust_float
+ libvlc_video_set_adjust_int
+ libvlc_video_set_aspect_ratio
++libvlc_video_set_access_unit_callbacks
+ libvlc_video_set_callbacks
+ libvlc_video_set_crop_geometry
+ libvlc_video_set_deinterlace
+diff --git a/lib/media_player.c b/lib/media_player.c
+index fda1091cc8..b3c680aa9f 100644
+--- a/lib/media_player.c
++++ b/lib/media_player.c
+@@ -631,6 +631,8 @@ libvlc_media_player_new( libvlc_instance_t *instance )
+     var_Create (mp, "vmem-data", VLC_VAR_ADDRESS);
+     var_Create (mp, "vmem-setup", VLC_VAR_ADDRESS);
+     var_Create (mp, "vmem-cleanup", VLC_VAR_ADDRESS);
++    var_Create (mp, "vmem-access-unit", VLC_VAR_ADDRESS);
++    var_Create (mp, "vmem-picture-date", VLC_VAR_ADDRESS);
+     var_Create (mp, "vmem-chroma", VLC_VAR_STRING | VLC_VAR_DOINHERIT);
+     var_Create (mp, "vmem-width", VLC_VAR_INTEGER | VLC_VAR_DOINHERIT);
+     var_Create (mp, "vmem-height", VLC_VAR_INTEGER | VLC_VAR_DOINHERIT);
+@@ -1115,6 +1117,14 @@ void libvlc_video_set_callbacks( libvlc_media_player_t *mp,
+     var_SetString( mp, "window", "none" );
+ }
+ 
++void libvlc_video_set_access_unit_callbacks( libvlc_media_player_t *mp,
++                                             libvlc_video_access_unit_cb access_unit,
++                                             libvlc_video_picture_date_cb picture_date )
++{
++    var_SetAddress( mp, "vmem-access-unit", access_unit );
++    var_SetAddress( mp, "vmem-picture-date", picture_date );
++}
++
+ void libvlc_video_set_format_callbacks( libvlc_media_player_t *mp,
+                                         libvlc_video_format_cb setup,
+                                         libvlc_video_cleanup_cb cleanup )
+diff --git a/modules/codec/avcodec/video.c b/modules/codec/avcodec/video.c
+index 8524f575bd..9fde5a5bc4 100644
+--- a/modules/codec/avcodec/video.c
++++ b/modules/codec/avcodec/video.c
+@@ -62,6 +62,10 @@ struct decoder_sys_t
+     /* Video decoder specific part */
+     date_t  pts;
+ 
++    /* Told of each access unit, from LibVLC (vmem-access-unit) */
++    void (*access_unit)(void *, int64_t, const void *, size_t);
++    void *access_unit_data;
++
+     /* Closed captions for decoders */
+     cc_data_t cc;
+ 
+@@ -832,6 +836,8 @@ int InitVideoDec( vlc_object_t *obj )
+     p_dec->p_sys = p_sys;
+     p_sys->p_context = p_context;
+     p_sys->p_codec = p_codec;
++    p_sys->access_unit = var_InheritAddress( p_dec, "vmem-access-unit" );
++    p_sys->access_unit_data = var_InheritAddress( p_dec, "vmem-data" );
+     p_sys->profile = -1;
+     p_sys->level = -1;
+     p_sys->b_hardware_only = false;
+@@ -851,6 +857,8 @@ static void Flush( decoder_t *p_dec )
+     p_sys->i_late_frames = 0;
+     p_sys->b_draining = false;
+     cc_Flush( &p_sys->cc );
++    if( p_sys->access_unit != NULL )
++        p_sys->access_unit( p_sys->access_unit_data, VLC_TICK_INVALID, NULL, 0 );
+ 
+     /* Abort pictures in order to unblock all avcodec workers threads waiting
+      * for a picture. This will avoid a deadlock between avcodec_flush_buffers
+@@ -1224,6 +1232,9 @@ static picture_t *DecodeBlock( decoder_t *p_dec, block_t **pp_block, bool *error
+                 pkt->size = p_block->i_buffer;
+                 pkt->pts = p_block->i_pts > VLC_TICK_INVALID ? p_block->i_pts : AV_NOPTS_VALUE;
+                 pkt->dts = p_block->i_dts > VLC_TICK_INVALID ? p_block->i_dts : AV_NOPTS_VALUE;
++                if( p_sys->access_unit != NULL )
++                    p_sys->access_unit( p_sys->access_unit_data, p_block->i_pts,
++                                        p_block->p_buffer, p_block->i_buffer );
+ 
+                 /* Make sure we don't reuse the same timestamps twice */
+                 p_block->i_pts =
+@@ -1428,6 +1439,7 @@ static picture_t *DecodeBlock( decoder_t *p_dec, block_t **pp_block, bool *error
+         }
+ 
+         p_pic->date = i_pts;
++        p_pic->access_unit_date = i_pts;
+         /* Hack to force display of still pictures */
+         p_pic->b_force = p_sys->b_first_frame;
+         p_pic->i_nb_fields = 2 + frame->repeat_pict;
+diff --git a/modules/video_output/vmem.c b/modules/video_output/vmem.c
+index 341a59c907..3b69198d67 100644
+--- a/modules/video_output/vmem.c
++++ b/modules/video_output/vmem.c
+@@ -95,6 +95,7 @@ struct vout_display_sys_t {
+     void (*unlock)(void *sys, void *id, void *const *plane);
+     void (*display)(void *sys, void *id);
+     void (*cleanup)(void *sys);
++    void (*picture_date)(void *sys, void *id, int64_t date);
+ 
+     unsigned pitches[PICTURE_PLANE_MAX];
+     unsigned lines[PICTURE_PLANE_MAX];
+@@ -132,6 +133,7 @@ static int Open(vlc_object_t *object)
+     sys->unlock = var_InheritAddress(vd, "vmem-unlock");
+     sys->display = var_InheritAddress(vd, "vmem-display");
+     sys->cleanup = var_InheritAddress(vd, "vmem-cleanup");
++    sys->picture_date = var_InheritAddress(vd, "vmem-picture-date");
+     sys->opaque = var_InheritAddress(vd, "vmem-data");
+     sys->pool = NULL;
+ 
+@@ -254,6 +256,8 @@ static void Prepare(vout_display_t *vd, picture_t *pic, subpicture_t *subpic)
+     void *planes[PICTURE_PLANE_MAX];
+ 
+     sys->pic_opaque = sys->lock(sys->opaque, planes);
++    if (sys->picture_date != NULL)
++        sys->picture_date(sys->opaque, sys->pic_opaque, pic->access_unit_date);
+ 
+     for (unsigned i = 0; i < PICTURE_PLANE_MAX; i++) {
+         rsc.p[i].p_pixels = planes[i];
+diff --git a/src/misc/picture.c b/src/misc/picture.c
+index 892d5b7dac..2b9ffa669e 100644
+--- a/src/misc/picture.c
++++ b/src/misc/picture.c
+@@ -363,6 +363,7 @@ void picture_CopyProperties( picture_t *p_dst, const picture_t *p_src )
+     p_dst->b_progressive = p_src->b_progressive;
+     p_dst->i_nb_fields = p_src->i_nb_fields;
+     p_dst->b_top_field_first = p_src->b_top_field_first;
++    p_dst->access_unit_date = p_src->access_unit_date;
+ }
+ 
+ void picture_CopyPixels( picture_t *p_dst, const picture_t *p_src )
+-- 
+2.30.2
+

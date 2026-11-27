@@ -1,6 +1,6 @@
 # What tools/libvlc-linux/build.sh builds in: Debian 11, whose glibc is 2.31, with the system libraries libVLC is linked to.
 # Debian 11 has left Debian's mirrors, so its packages are a dated snapshot's, whose signatures have expired since.
-FROM debian:bullseye
+FROM amd64/debian:bullseye
 RUN printf 'deb [check-valid-until=no] http://snapshot.debian.org/archive/%s %s main\n' \
     debian/20260801T000000Z bullseye debian-security/20260801T000000Z bullseye-security > /etc/apt/sources.list \
   && rm -rf /etc/apt/sources.list.d/* \
