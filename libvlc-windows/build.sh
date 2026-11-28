@@ -2,8 +2,8 @@
 # Builds the libVLC the Windows app ships, for x64: VideoLAN's own VLC sources at the commit tools/libvlc/build.sh's
 # libvlcjni pins, cross-compiled with mingw-w64 in the Docker image VLC's own CI builds win64 3.0 in, as
 # extras/package/win32/build.sh builds it, plus ../vlc/'s patches, which every libVLC build applies (FFmpeg's AVS+
-# decoder, a decoder made while paused told of the pause, and a subtitle file given an ES id no other track holds,
-# which 3.0.22-rc1-2 was built before, deinterlace without Yadif, whose code is FFmpeg's GPL filter, and
+# decoder, a decoder made while paused told of the pause, deinterlace without Yadif, whose code is FFmpeg's GPL filter,
+# a subtitle file given an ES id no other track holds, which 3.0.22-rc1-2 was built before, and
 # `libvlc_video_set_sub_margin`, which lifts the subtitles of a player already playing and 3.0.22-rc1-4 was built
 # before), and ../vlc/desktop/'s, which this and Linux's do (the plugins cache trusted by a plugin's size alone, since an
 # MSIX installs every file with the time it was installed, the format callback offered a picture's visible size, not
