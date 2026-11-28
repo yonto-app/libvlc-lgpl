@@ -5,14 +5,20 @@
 
 . /tools/vlc/gpl.sh
 
+# What a diff changes: the files and the lines it takes out and puts in, never its context, which a patch made for
+# another VLC tree (0204, which VLCKit's takes too) may have less of than git writes.
+changes_of() {
+  sed -n '/^diff --git /,$p' | grep -E '^(diff --git |[-+])' | grep -v -x -e '-- '
+}
+
 # Each patch must be in VLC as it is here, not only by its Message-Id: a volume cloned before a patch was added or
 # changed never applies it again.
 check_patches() {
   for patch in $patches; do
     id="$(sed -n 's/^Message-Id: <\(.*\)>$/\1/p' "$patch" | head -n 1)"
-    commit="$(git -C "$vlc" log --format=%H --fixed-strings --grep="$id" | head -n 1)"
-    if [ -z "$commit" ] || [ "$(git -C "$vlc" -c diff.suppressBlankEmpty=false diff-tree -p "$commit" | git patch-id --stable | cut -d' ' -f1)" != \
-        "$(git patch-id --stable < "$patch" | cut -d' ' -f1)" ]; then
+    commit="$([ -z "$id" ] || git -C "$vlc" log --format=%H --fixed-strings --grep="$id" | head -n 1)"
+    if [ -z "$commit" ] || [ "$(git -C "$vlc" diff-tree -p "$commit" | changes_of)" != \
+        "$(changes_of < "$patch")" ]; then
       echo "VLC in the volume does not hold $(basename "$patch") as it is now: remove the volume and build again" >&2
       exit 1
     fi
@@ -102,4 +108,11 @@ refuse_gpl_binaries() {
 check_ffmpeg() {
   strings -a "$1" | grep -q 'Enhanced field coded P picture' || { echo "$(basename "$1") has no AVS+ decoder" >&2; exit 1; }
   strings -a "$1" | grep -q 'LGPL version 2.1 or later' || { echo "FFmpeg is not LGPL-2.1" >&2; exit 1; }
+}
+
+# Stops where libVLC $1 lacks a call the patches add.
+check_libvlc() {
+  for call in libvlc_video_set_sub_margin libvlc_video_set_access_unit_callbacks; do
+    strings -a "$1" | grep -q -x "$call" || { echo "$(basename "$1") has no $call" >&2; exit 1; }
+  done
 }

@@ -4,9 +4,9 @@
 # extras/package/win32/build.sh builds it, plus ../vlc/'s patches, which every libVLC build applies (FFmpeg's AVS+
 # decoder, a decoder made while paused told of the pause, deinterlace without Yadif, whose code is FFmpeg's GPL filter,
 # a subtitle file given an ES id no other track holds, which 3.0.22-rc1-2 was built before, and
-# `libvlc_video_set_sub_margin`, which lifts the subtitles of a player already playing and 3.0.22-rc1-4 was built
-# before), and ../vlc/desktop/'s, which this and Linux's do (the plugins cache trusted by a plugin's size alone, since an
-# MSIX installs every file with the time it was installed, the format callback offered a picture's visible size, not
+# `libvlc_video_set_sub_margin`, which lifts the subtitles of a player already playing, so the app keeps them above its
+# controls, and 3.0.22-rc1-5 added), and ../vlc/desktop/'s, which this and Linux's do (the plugins cache trusted by a
+# plugin's size alone, since an MSIX installs every file with the time it was installed, the format callback offered a picture's visible size, not
 # the one its decoder pads it to, which 3.0.22-rc1-2 was built before, and each video access unit told to the app with
 # the one each picture came from, which 3.0.22-rc1-4 added for Dolby Vision profile 5,
 # docs/design/2026-11-27-dolby-vision-5-on-the-desktop.md) (docs/design/2026-11-17-yonto-on-windows.md).
@@ -28,7 +28,7 @@
 set -eu
 
 VLC_HASH=c9dde25a62c4612d71250c4eb845154e0ea9e13e
-VERSION=3.0.22-rc1-4
+VERSION=3.0.22-rc1-5
 IMAGE=registry.videolan.org/vlc-debian-win64:20221023193231
 TRIPLET=x86_64-w64-mingw32
 
@@ -115,6 +115,7 @@ find "$stage" \( -name '*.dll' -o -name '*.exe' \) -exec "$TRIPLET-strip" --stri
 # shellcheck disable=SC2046
 refuse_gpl_binaries $(find "$stage" -name '*.dll')
 check_ffmpeg "$stage/plugins/codec/libavcodec_plugin.dll"
+check_libvlc "$stage/libvlc.dll"
 for plugin in access/liblibbluray codec/libd3d11va codec/liblibass demux/libmkv video_output/libdirect3d11 \
     video_filter/libdeinterlace; do
   [ -f "$stage/plugins/${plugin}_plugin.dll" ] || { echo "the plugins have no $plugin" >&2; exit 1; }

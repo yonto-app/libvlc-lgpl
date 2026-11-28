@@ -17,7 +17,7 @@
 set -eu
 
 VLC_HASH=c9dde25a62c4612d71250c4eb845154e0ea9e13e
-VERSION=3.0.22-rc1-2
+VERSION=3.0.22-rc1-3
 GLIBC=2.31
 TRIPLET=x86_64-linux-gnu
 
@@ -113,6 +113,7 @@ done
 # shellcheck disable=SC2046
 refuse_gpl_binaries $(find "$stage" -name '*.so*')
 check_ffmpeg "$stage/vlc/plugins/codec/libavcodec_plugin.so"
+check_libvlc "$stage/libvlc.so.5"
 for plugin in access/liblibbluray codec/libvaapi_drm codec/liblibass demux/libmkv video_output/libgl video_output/libglx \
     video_output/libxcb_x11 video_output/libxcb_window video_filter/libdeinterlace audio_output/libpulse audio_output/libalsa; do
   ls "$stage/vlc/plugins/${plugin}"*_plugin.so > /dev/null 2>&1 || { echo "the plugins have no $plugin" >&2; exit 1; }

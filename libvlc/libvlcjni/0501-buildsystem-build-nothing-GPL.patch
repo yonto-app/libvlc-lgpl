@@ -1,0 +1,75 @@
+From 7bcb2728dc0eba9e6e78903da6e77726b1c1be5e Mon Sep 17 00:00:00 2001
+Message-Id: <7bcb2728dc0eba9e6e78903da6e77726b1c1be5e.1795848635.git.336298264+yonto-app@users.noreply.github.com>
+From: yonto-app <336298264+yonto-app@users.noreply.github.com>
+Date: Sat, 28 Nov 2026 19:05:08 +1300
+Subject: [PATCH] buildsystem: build nothing GPL
+
+Lua, Real RTSP and libzvbi are off (teletext falls back to VLC's own telx), and every plugin made from a GPL source, which the GPL_SH scan lists, joins the module blacklist, so none is linked into libvlc.so.
+---
+ buildsystem/compile-libvlc.sh | 18 +++++++++++++-----
+ 1 file changed, 13 insertions(+), 5 deletions(-)
+
+diff --git a/buildsystem/compile-libvlc.sh b/buildsystem/compile-libvlc.sh
+index f9c4a17..590f621 100755
+--- a/buildsystem/compile-libvlc.sh
++++ b/buildsystem/compile-libvlc.sh
+@@ -293,12 +293,12 @@ VLC_CONTRIB_ARGS="\
+     --disable-dca \
+     --disable-goom \
+     --disable-chromaprint \
+-    --enable-lua \
++    --disable-lua \
+     --disable-schroedinger \
+     --disable-sdl \
+     --disable-SDL_image \
+     --disable-fontconfig \
+-    --enable-zvbi \
++    --disable-zvbi \
+     --disable-kate \
+     --disable-caca \
+     --disable-mpcdec \
+@@ -341,7 +341,7 @@ VLC_CONTRIB_ARGS="\
+ VLC_CONFIGURE_ARGS="\
+     --with-pic \
+     --disable-nls \
+-    --enable-realrtsp \
++    --disable-realrtsp \
+     --enable-avformat \
+     --enable-swscale \
+     --enable-avcodec \
+@@ -354,7 +354,7 @@ VLC_CONFIGURE_ARGS="\
+     --disable-update-check \
+     --disable-vlm \
+     --disable-dbus \
+-    --enable-lua \
++    --disable-lua \
+     --disable-vcd \
+     --disable-v4l2 \
+     --enable-bluray \
+@@ -370,7 +370,8 @@ VLC_CONFIGURE_ARGS="\
+     --enable-mpg123 \
+     --disable-dca \
+     --disable-sdl-image \
+-    --enable-zvbi \
++    --disable-zvbi \
++    --enable-telx \
+     --disable-fluidsynth \
+     --enable-fluidlite \
+     --disable-jack \
+@@ -646,6 +647,13 @@ avlc_checkfail "vlc: make failed"
+ make -C $VLC_BUILD_DIR $MAKEFLAGS install
+ avlc_checkfail "vlc: make install failed"
+ 
++# Some of VLC's own modules are GPL, which no configure flag leaves out.
++. "${GPL_SH}"
++GPL_MODULES=$(gpl_plugins "$VLC_SRC_DIR" "$VLC_BUILD_DIR")
++avlc_checkfail "listing the GPL plugins failed"
++echo "GPL, left out:" ${GPL_MODULES}
++VLC_MODULE_BLACKLIST="${VLC_MODULE_BLACKLIST} ${GPL_MODULES}"
++
+ ##################
+ # libVLC modules #
+ ##################
+-- 
+2.55.0
+

@@ -1,10 +1,13 @@
 From 4af05552cc604d2f5c079b5ae85b882ace44469b Mon Sep 17 00:00:00 2001
+Message-Id: <4af05552cc604d2f5c079b5ae85b882ace44469b.1795806836.git.336298264+yonto-app@users.noreply.github.com>
 From: yonto-app <336298264+yonto-app@users.noreply.github.com>
 Date: Sat, 28 Nov 2026 08:13:56 +1300
 Subject: [PATCH] lib: video: set the subtitle margin of a player and its video
  outputs
 
 The sub-margin option is read as a video output starts, and libVLC had no call to change it on one that is running, so an app could not lift the subtitles clear of its own controls as they show.
+
+Message-Id: <4af05552cc604d2f5c079b5ae85b882ace44469b.1795806836.git.336298264+yonto-app@users.noreply.github.com>
 ---
  include/vlc/libvlc_media_player.h | 10 ++++++++++
  lib/libvlc.sym                    |  1 +

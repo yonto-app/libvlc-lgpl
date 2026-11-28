@@ -42,6 +42,15 @@ gpl_core_sources() {
   true
 }
 
+# gpl_plugins <vlc source> <vlc build>: the name of each plugin in modules/ made from a GPL source (`dummy` for
+# libdummy_plugin), one to a line.
+gpl_plugins() {
+  find "$2/modules" -name .libs -prune -o -name 'lib*_plugin.la' -print | while read -r _plugin; do
+    _name="$(basename "$_plugin" .la)"
+    [ -z "$(gpl_sources_of "$1" "$2" "$_name")" ] || echo "$_name" | sed 's/^lib//; s/_plugin$//'
+  done
+}
+
 # remove_gpl_plugins <vlc source> <vlc build> <plugins folder>: deletes the static plugins made from a GPL source,
 # naming each, before they are linked into one library.
 remove_gpl_plugins() {

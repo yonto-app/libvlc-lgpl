@@ -1,0 +1,68 @@
+From 138de33a4e918ed741fff4d6ac291bd3a0705955 Mon Sep 17 00:00:00 2001
+Message-Id: <138de33a4e918ed741fff4d6ac291bd3a0705955.1795845948.git.336298264+yonto-app@users.noreply.github.com>
+From: yonto-app <336298264+yonto-app@users.noreply.github.com>
+Date: Sat, 28 Nov 2026 19:04:44 +1300
+Subject: [PATCH] MediaPlayer: set the subtitle margin
+
+libvlc_video_set_sub_margin (VLC patch 0204) lifts the subtitles of a player already playing, so an app can keep them above its own controls as they show.
+---
+ libvlc/jni/libvlcjni-mediaplayer.c              | 13 +++++++++++++
+ libvlc/src/org/videolan/libvlc/MediaPlayer.java | 11 +++++++++++
+ 2 files changed, 24 insertions(+)
+
+diff --git a/libvlc/jni/libvlcjni-mediaplayer.c b/libvlc/jni/libvlcjni-mediaplayer.c
+index 382efb3..8679528 100644
+--- a/libvlc/jni/libvlcjni-mediaplayer.c
++++ b/libvlc/jni/libvlcjni-mediaplayer.c
+@@ -1028,6 +1028,19 @@ Java_org_videolan_libvlc_MediaPlayer_nativeSetScale(JNIEnv *env, jobject thiz,
+     libvlc_video_set_scale(p_obj->u.p_mp, factor);
+ }
+ 
++void
++Java_org_videolan_libvlc_MediaPlayer_nativeSetSubtitleMargin(JNIEnv *env,
++                                                             jobject thiz,
++                                                             jint margin)
++{
++    vlcjni_object *p_obj = VLCJniObject_getInstance(env, thiz);
++
++    if (!p_obj)
++        return;
++
++    libvlc_video_set_sub_margin(p_obj->u.p_mp, margin);
++}
++
+ jstring
+ Java_org_videolan_libvlc_MediaPlayer_nativeGetAspectRatio(JNIEnv *env,
+                                                           jobject thiz)
+diff --git a/libvlc/src/org/videolan/libvlc/MediaPlayer.java b/libvlc/src/org/videolan/libvlc/MediaPlayer.java
+index aa1519a..7f13d51 100644
+--- a/libvlc/src/org/videolan/libvlc/MediaPlayer.java
++++ b/libvlc/src/org/videolan/libvlc/MediaPlayer.java
+@@ -871,6 +871,16 @@ public class MediaPlayer extends VLCObject<MediaPlayer.Event> {
+         nativeSetScale(scale);
+     }
+ 
++    /**
++     * Lift the subtitles by a margin from the bottom of the picture, on the video outputs already
++     * running too.
++     *
++     * @param margin the margin, in the pixels libVLC draws the subtitles at
++     */
++    public void setSubtitleMargin(int margin) {
++        nativeSetSubtitleMargin(margin);
++    }
++
+     /**
+      * Get current video aspect ratio
+      *
+@@ -1482,6 +1492,7 @@ public class MediaPlayer extends VLCObject<MediaPlayer.Event> {
+     private native void nativeSetVideoTitleDisplay(int position, int timeout);
+     private native float nativeGetScale();
+     private native void nativeSetScale(float scale);
++    private native void nativeSetSubtitleMargin(int margin);
+     private native String nativeGetAspectRatio();
+     private native void nativeSetAspectRatio(String aspect);
+     private native boolean nativeUpdateViewpoint(float yaw, float pitch, float roll, float fov, boolean absolute);
+-- 
+2.55.0
+

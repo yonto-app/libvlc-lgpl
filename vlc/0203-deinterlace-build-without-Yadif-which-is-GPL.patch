@@ -11,6 +11,8 @@ other mode, "auto" (which is "x") included, and a mode it does not know,
 them, falls back to "auto" rather than leaving the filter with no
 renderer. The Direct3D 11 and DXVA2 deinterlacers, which map "yadif2x"
 to the GPU's adaptive one, are untouched.
+
+Message-Id: <53af9ba17bdc2428a76844d694f4b8fcf7037633.1794890535.git.336298264+yonto-app@users.noreply.github.com>
 ---
  modules/video_filter/Makefile.am              |   2 -
  modules/video_filter/deinterlace/algo_yadif.c | 202 -------------

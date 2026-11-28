@@ -8,14 +8,16 @@ Since 3.6.5-3 it has a second: a decoder made while the input is paused is told 
 The VLCKit archives below have it since 3.7.3-4.
 Since 3.6.5-4 it has a third, Android's alone (`libvlc/vlc/0300-…patch`, which VLCKit does not take, having no AudioTrack): VideoLAN's own `f1369aeb95f89d1afb8ebec4403c30b45ff3e863` from VLC 3.0.x, which keeps a DynamicsProcessing effect Android refuses from marking the AudioTrack failed. Without it a 5.1 track played on a DIRECT output, where Android refuses the effect, is never written and plays silent.
 Since 3.6.5-5 it has a fourth: a track VLC numbers itself (a subtitle file added beside the video) skips an id a reader already gave another track, so a WMV, whose reader numbers its own tracks from 1, no longer gives its subtitle file the audio's id, which made picking the subtitle pick the audio and draw nothing (`vlc/0202-…patch`). The VLCKit below has it since 3.7.3-6.
-`libvlc/build.sh` fails when the result holds a GPL string, no AVS+ decoder or no AudioTrack fix, or when a patch in `vlc/` or `libvlc/vlc/` was not applied.
+Since 3.6.5-6 nothing GPL is in it, as in the VLCKit below since 3.7.3-5: 3.6.5-5 and before held Yadif, Lua, Real RTSP, libzvbi and the Dolby Surround decoder, which VideoLAN's LGPL contrib option does not leave out. Lua, Real RTSP and libzvbi are off (teletext falls back to VLC's own telx), deinterlace is built without Yadif (`vlc/0203-…patch`), and every plugin made from a GPL source file, which `vlc/gpl.sh` lists, joins libvlcjni's module blacklist, so it is never linked (`libvlc/libvlcjni/0501-…patch`, a change to libvlcjni's build).
+3.6.5-6 also has `libvlc_video_set_sub_margin`, which sets the subtitles' distance from the foot of the picture on a player already playing, so an app can keep them above its controls (`vlc/0204-…patch`), and its Java binding, `MediaPlayer.setSubtitleMargin` (`libvlc/libvlcjni/0500-…patch`).
+`libvlc/build.sh` fails when the result holds a GPL string or a GPL plugin's symbol, libVLC itself is built from a GPL source, it has no AVS+ or TrueHD decoder, no AudioTrack fix or no subtitle margin, or a patch in `vlc/`, `libvlc/vlc/` or `libvlc/libvlcjni/` was not applied.
 
 | | |
 | --- | --- |
-| Artifact | `app.yonto.vendor:libvlc-lgpl:3.6.5-5` (AAR; arm64-v8a and armeabi-v7a); 3.6.5-4, without the fourth change, 3.6.5-3, without the third, 3.6.5-2, without the second, and 3.6.5-1, without any, stay beside it |
-| SHA-256 | `588ee21798cc9049e0ddd69ddad11763405966be48c1ceaa4519f9c74df41db7` |
+| Artifact | `app.yonto.vendor:libvlc-lgpl:3.6.5-6` (AAR; arm64-v8a and armeabi-v7a); 3.6.5-5, which holds GPL code and has no subtitle margin, 3.6.5-4, without the fourth change, 3.6.5-3, without the third, 3.6.5-2, without the second, and 3.6.5-1, without any, stay beside it |
+| SHA-256 | `6cc06205758dd671d58bd9b871d502d046bb201f54cbd69c7e8db9b8bee49430` |
 | Licence | LGPL-2.1-or-later (`COPYING.LGPL-2.1`) |
-| Source | https://code.videolan.org/videolan/vlc-android (tag `libvlc-3.6.5`), https://code.videolan.org/videolan/libvlcjni (branch `libvlcjni-3.x`, commit `965e8648717076654f463ae64ee1d008d7ff282d`), and the VLC commit `c9dde25a62c4612d71250c4eb845154e0ea9e13e` that commit fetches, with `vlc/`'s and `libvlc/vlc/`'s patches |
+| Source | https://code.videolan.org/videolan/vlc-android (tag `libvlc-3.6.5`), https://code.videolan.org/videolan/libvlcjni (branch `libvlcjni-3.x`, commit `965e8648717076654f463ae64ee1d008d7ff282d`, with `libvlc/libvlcjni/`'s patches), and the VLC commit `c9dde25a62c4612d71250c4eb845154e0ea9e13e` that commit fetches, with `vlc/`'s and `libvlc/vlc/`'s patches |
 | Recipe | `libvlc/build.sh`, which needs the Android SDK, NDK 28 and NDK 21, JDK 17 and the tools its header lists; it is the exact script that makes the AAR |
 
 Yonto Player carries the libraries as the shared `libvlc.so` and `libvlcjni.so`, not linked into its own code.
@@ -61,15 +63,15 @@ Unlike Android's single `libvlc.so`, each VLC module is its own DLL, and some of
 It has the two changes in `vlc/` that the Android build has (FFmpeg's AVS+ decoder, and a decoder made while paused told of the pause), the deinterlace plugin built without Yadif, whose code is FFmpeg's GPL filter, falling back to its automatic mode when Yadif is asked for (`vlc/0203-…patch`, which was `vlc/desktop/0400-…patch` until VLCKit 3.7.3-6 took it too), and one of its own: `vlc/desktop/0401-…patch` has libVLC trust its plugins cache by a plugin's size alone, since a Windows app package (MSIX) installs every file with the time it was installed, which would otherwise leave every plugin opened on each start.
 Since 3.0.22-rc1-3 it also has the Android build's third, `vlc/0202-…patch` (a subtitle file given an id no other track holds), and a fifth of its own, which the Linux build has too: `vlc/desktop/0402-…patch` has `vmem` offer its format callback a picture's visible size rather than the size its decoder pads it to, so a picture drawn from memory keeps its shape.
 Since 3.0.22-rc1-4 it has a sixth, which the Linux build has too: `vlc/desktop/0403-…patch` adds `libvlc_video_set_access_unit_callbacks()`, which tells a `vmem` caller of each video access unit as avcodec is given it and of the access unit each picture was decoded from, so Yonto Player can apply a Dolby Vision profile 5 picture's own RPU, which FFmpeg 4.4 drops.
-`vlc/0204-…patch` (`libvlc_video_set_sub_margin`, VLCKit 3.7.3-6's) is newer than 3.0.22-rc1-4; a rebuild takes it, and Yonto Player doesn't call it on Windows or Linux yet.
-`libvlc-windows/build.sh` fails when a GPL or LGPLv3 contrib is in the result, or when a patch was not applied.
+Since 3.0.22-rc1-5 it has a seventh, which the Linux build has since 3.0.22-rc1-3: `vlc/0204-…patch` (`libvlc_video_set_sub_margin`, VLCKit 3.7.3-6's and Android 3.6.5-6's), which sets the subtitles' distance from the foot of the picture on a player already playing, so an app can keep them above its controls.
+`libvlc-windows/build.sh` fails when a GPL or LGPLv3 contrib is in the result, a patch was not applied, or libVLC lacks a call its patches add.
 
 | | |
 | --- | --- |
-| Artifact | `libvlc-windows-x64-3.0.22-rc1-4.zip` (`libvlc.dll`, `libvlccore.dll`, `plugins/`, `sdk/` with the headers and import libraries, and `vlc-cache-gen.exe`), on this repository's release `libvlc-windows-3.0.22-rc1-4` |
-| SHA-256 | `0415023276fe2e75e07109474fa9d4c20df224b41fae69d87e48f49221869d65` |
+| Artifact | `libvlc-windows-x64-3.0.22-rc1-5.zip` (`libvlc.dll`, `libvlccore.dll`, `plugins/`, `sdk/` with the headers and import libraries, and `vlc-cache-gen.exe`), on this repository's release `libvlc-windows-3.0.22-rc1-5` (earlier versions stay on their own releases) |
+| SHA-256 | `2ab9b808a483f267bf2bd990a7296c68507476ed2a92d2ef7b1a946d3d9384fc` |
 | Licence | LGPL-2.1-or-later (`COPYING.LGPL-2.1`) |
-| Source | https://code.videolan.org/videolan/vlc (branch `3.0.x`, commit `c9dde25a62c4612d71250c4eb845154e0ea9e13e`), with `vlc/`'s 0200, 0201, 0202 and 0203 and `vlc/desktop/`'s 0401, 0402 and 0403 (0203 as `vlc/desktop/0400` at the release's tag) |
+| Source | https://code.videolan.org/videolan/vlc (branch `3.0.x`, commit `c9dde25a62c4612d71250c4eb845154e0ea9e13e`), with `vlc/`'s 0200 to 0204 and `vlc/desktop/`'s 0401, 0402 and 0403 |
 | Recipe | `libvlc-windows/build.sh`, which needs Docker able to run linux/amd64 images; it is the exact script that makes the zip |
 
 Yonto Player carries the libraries as the DLLs `libvlc.dll` and `libvlccore.dll` and the plugins beside them, not linked into its own code.
@@ -77,18 +79,18 @@ Anyone may replace them with a build of their own from the recipe above.
 
 # libVLC, LGPL-only, for Yonto Player on Linux
 
-This is libVLC 3.0.22-rc1 for Linux x64, from the same VLC commit with the same patches and the same GPL exclusions as the Windows build above, built natively in Debian 11 (from snapshot.debian.org, since 11 has left Debian's mirrors), so it runs on any distribution with glibc 2.29 or later.
+This is libVLC 3.0.22-rc1 for Linux x64, from the same VLC commit with the same patches and the same GPL exclusions as the Windows build above, built natively in Debian 11 (from snapshot.debian.org, since 11 has left Debian's mirrors), so it runs on any distribution with glibc 2.31 or later.
 What belongs to the viewer's system stays the system's and is not in it: X11 and xcb, OpenGL, fontconfig and FreeType, ALSA and PulseAudio, D-Bus, VA-API and VDPAU.
 The codecs, demuxers and libass are VLC's contribs, linked into the plugins.
 libva, libvdpau and xcb's smaller libraries have to match the viewer's system, but FFmpeg and the X11 video output are linked to them, so a copy of each from Debian 11 is in `fallback/` (MIT), which Yonto Player loads only where the system has none.
-It has the Windows build's changes, `vlc/desktop/0402-…patch` (VLC's `vmem` offers its format callback a picture's visible size rather than the one its decoder pads it to, which otherwise scaled the picture out of its shape) and, since 3.0.22-rc1-2, `vlc/desktop/0403-…patch` (each video access unit told to the app with the one each picture came from) among them.
+It has the Windows build's changes, `vlc/desktop/0402-…patch` (VLC's `vmem` offers its format callback a picture's visible size rather than the one its decoder pads it to, which otherwise scaled the picture out of its shape), since 3.0.22-rc1-2 `vlc/desktop/0403-…patch` (each video access unit told to the app with the one each picture came from), and since 3.0.22-rc1-3 `vlc/0204-…patch` (`libvlc_video_set_sub_margin`) among them.
 What both desktop scripts share (VLC's sources and patches, the contribs, and the scan that leaves out every plugin built from a GPL source) is `vlc/build-common.sh`, whose scan is `vlc/gpl.sh`, which the VLCKit build sources too.
-`libvlc-linux/build.sh` fails when a GPL or LGPLv3 contrib is in the result, a patch was not applied, a plugin holds GPL code, FFmpeg is not LGPL-2.1 or has no AVS+ decoder, a symbol needs a glibc newer than 2.31, or a plugin needs a library that is neither in it nor every desktop's.
+`libvlc-linux/build.sh` fails when a GPL or LGPLv3 contrib is in the result, a patch was not applied, a plugin holds GPL code, FFmpeg is not LGPL-2.1 or has no AVS+ decoder, libVLC lacks a call its patches add, a symbol needs a glibc newer than 2.31, or a plugin needs a library that is neither in it nor every desktop's.
 
 | | |
 | --- | --- |
-| Artifact | `libvlc-linux-x64-3.0.22-rc1-2.tar.gz` (`libvlc.so.5`, `libvlccore.so.9`, `vlc/plugins/` with its `plugins.dat`, `vlc/` with the plugins' shared helpers, `fallback/` and `COPYING.LIB`), on this repository's release `libvlc-linux-3.0.22-rc1-2` |
-| SHA-256 | `98688d9181f4339179745cd511814526017ea452d9dbf74c42dab76c56a991eb` |
+| Artifact | `libvlc-linux-x64-3.0.22-rc1-3.tar.gz` (`libvlc.so.5`, `libvlccore.so.9`, `vlc/plugins/` with its `plugins.dat`, `vlc/` with the plugins' shared helpers, `fallback/` and `COPYING.LIB`), on this repository's release `libvlc-linux-3.0.22-rc1-3` (earlier versions stay on their own releases) |
+| SHA-256 | `6de9ab46821674b30a0e5fb5e209f72abb6802a10fd0d012aaeef4147626886d` |
 | Licence | LGPL-2.1-or-later (`COPYING.LGPL-2.1`); the `fallback/` libraries are libva's and libvdpau's MIT and X.Org's MIT |
 | Source | https://code.videolan.org/videolan/vlc (branch `3.0.x`, commit `c9dde25a62c4612d71250c4eb845154e0ea9e13e`), with `vlc/`'s and `vlc/desktop/`'s patches; Debian 11's libva, libvdpau, libxcb and libXfixes for `fallback/` |
 | Recipe | `libvlc-linux/build.sh` and its `Dockerfile`, which need Docker able to run linux/amd64 images; it is the exact script that makes the archive |
