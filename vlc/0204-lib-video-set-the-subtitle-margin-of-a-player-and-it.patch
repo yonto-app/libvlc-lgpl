@@ -1,0 +1,79 @@
+From 4af05552cc604d2f5c079b5ae85b882ace44469b Mon Sep 17 00:00:00 2001
+From: yonto-app <336298264+yonto-app@users.noreply.github.com>
+Date: Sat, 28 Nov 2026 08:13:56 +1300
+Subject: [PATCH] lib: video: set the subtitle margin of a player and its video
+ outputs
+
+The sub-margin option is read as a video output starts, and libVLC had no call to change it on one that is running, so an app could not lift the subtitles clear of its own controls as they show.
+---
+ include/vlc/libvlc_media_player.h | 10 ++++++++++
+ lib/libvlc.sym                    |  1 +
+ lib/media_player.c                |  1 +
+ lib/video.c                       | 14 ++++++++++++++
+ 4 files changed, 26 insertions(+)
+
+diff --git a/include/vlc/libvlc_media_player.h b/include/vlc/libvlc_media_player.h
+index d499b3d3b8..b41780cd2a 100644
+--- a/include/vlc/libvlc_media_player.h
++++ b/include/vlc/libvlc_media_player.h
+@@ -1367,4 +1367,14 @@ LIBVLC_API
+ void libvlc_video_set_crop_geometry( libvlc_media_player_t *p_mi, const char *psz_geometry );
+ 
++/**
++ * Lift the subtitles by a margin from the bottom of the picture, as the
++ * sub-margin option does, on the video outputs already running too.
++ *
++ * \param p_mi the media player
++ * \param i_margin the margin, in the picture's own pixels
++ */
++LIBVLC_API
++void libvlc_video_set_sub_margin( libvlc_media_player_t *p_mi, int i_margin );
++
+ /**
+  * Get current teletext page requested or 0 if it's disabled.
+diff --git a/lib/libvlc.sym b/lib/libvlc.sym
+index a4f36a40b7..ff27148408 100644
+--- a/lib/libvlc.sym
++++ b/lib/libvlc.sym
+@@ -290,4 +290,5 @@ libvlc_video_set_scale
+ libvlc_video_set_spu
+ libvlc_video_set_spu_delay
++libvlc_video_set_sub_margin
+ libvlc_video_set_subtitle_file
+ libvlc_video_set_teletext
+diff --git a/lib/media_player.c b/lib/media_player.c
+index 31f340447e..906d4340af 100644
+--- a/lib/media_player.c
++++ b/lib/media_player.c
+@@ -739,4 +739,5 @@ libvlc_media_player_new( libvlc_instance_t *instance )
+     var_Create (mp, "sub-source", VLC_VAR_STRING | VLC_VAR_DOINHERIT);
+     var_Create (mp, "sub-filter", VLC_VAR_STRING | VLC_VAR_DOINHERIT);
++    var_Create (mp, "sub-margin", VLC_VAR_INTEGER | VLC_VAR_DOINHERIT);
+ 
+     var_Create (mp, "marq-marquee", VLC_VAR_STRING);
+diff --git a/lib/video.c b/lib/video.c
+index 5b8db36fa0..b9258311af 100644
+--- a/lib/video.c
++++ b/lib/video.c
+@@ -496,4 +496,18 @@ void libvlc_video_set_crop_geometry( libvlc_media_player_t *p_mi,
+ }
+ 
++void libvlc_video_set_sub_margin( libvlc_media_player_t *p_mi, int i_margin )
++{
++    var_SetInteger (p_mi, "sub-margin", i_margin);
++
++    size_t n;
++    vout_thread_t **pp_vouts = GetVouts (p_mi, &n);
++    for (size_t i = 0; i < n; i++)
++    {
++        var_SetInteger (pp_vouts[i], "sub-margin", i_margin);
++        vlc_object_release (pp_vouts[i]);
++    }
++    free (pp_vouts);
++}
++
+ int libvlc_video_get_teletext( libvlc_media_player_t *p_mi )
+ {
+-- 
+2.55.0
+

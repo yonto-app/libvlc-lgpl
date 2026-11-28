@@ -3,7 +3,8 @@
 # x265, libdvdread or live555; FFmpeg without --enable-gpl), so the engine is LGPL-2.1 and nothing else
 # (docs/design/2026-10-04-files-and-network-libraries.md), plus ../vlc/'s patches, which both libVLC builds apply
 # (FFmpeg's AVS+ decoder, a decoder made while paused told of the pause, and a subtitle file given an ES id no other
-# track holds, without which one beside a WMV could never be selected), and vlc/'s, which only this one does
+# track holds, without which one beside a WMV could never be selected, and `libvlc_video_set_sub_margin`, which lifts the
+# subtitles of a player already playing and the build pinned now was made before), and vlc/'s, which only this one does
 # (VideoLAN's fix that keeps a refused DynamicsProcessing from silencing the AudioTrack, until libvlcjni's VLC carries it).
 # Writes a Maven repository holding the AAR: -Pyonto.libvlcRepo=<it> tries it, and what is kept at yonto-app/libvlc-lgpl
 # (which settings.gradle.kts pins) is a copy of it.

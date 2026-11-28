@@ -1,5 +1,5 @@
 diff --git a/buildMobileVLCKit.sh b/buildMobileVLCKit.sh
-index db20d0c..284eb27 100755
+index db20d0c..4495e20 100755
 --- a/buildMobileVLCKit.sh
 +++ b/buildMobileVLCKit.sh
 @@ -9,7 +9,7 @@ BUILD_SIMULATOR=yes
@@ -61,7 +61,7 @@ index db20d0c..284eb27 100755
      fi
      if [ "$IOS" = "yes" ]; then
          CUSTOMOSOPTIONS=""
-@@ -542,7 +551,7 @@ buildLibVLC() {
+@@ -542,11 +551,11 @@ buildLibVLC() {
      ../bootstrap --build=${BUILD_TRIPLET} --host=${HOST_TRIPLET} --prefix=${VLCROOT}/contrib/${OSSTYLE}${PLATFORM_IDENTIFIER}-${HOST_TRIPLET}-${ARCH} --disable-gpl \
          --enable-ad-clauses \
          --disable-gnuv3 \
@@ -70,7 +70,22 @@ index db20d0c..284eb27 100755
          --disable-sdl \
          --disable-SDL_image \
          --disable-iconv \
-@@ -685,7 +694,7 @@ buildLibVLC() {
+-        --enable-zvbi \
++        --disable-zvbi \
+         --disable-kate \
+         --disable-caca \
+         --disable-gettext \
+@@ -677,7 +686,8 @@ buildLibVLC() {
+         --disable-sse \
+         --disable-notify \
+         --enable-live555 \
+-        --enable-realrtsp \
++        --disable-realrtsp \
++        --disable-zvbi --enable-telx \
+         --enable-swscale \
+         --disable-projectm \
+         --enable-libass \
+@@ -685,7 +695,7 @@ buildLibVLC() {
          --disable-goom \
          --disable-dvdread \
          --disable-dvdnav \
@@ -79,3 +94,14 @@ index db20d0c..284eb27 100755
          --disable-linsys \
          --disable-libva \
          --disable-gme \
+@@ -818,6 +828,10 @@ buildLibVLC() {
+         find ${PREFIX}/lib/vlc/plugins -name *$i* -type f -exec rm '{}' \;
+     done
+ 
++    # Some of VLC's own modules are GPL, which no configure flag leaves out.
++    . "${GPL_SH}"
++    remove_gpl_plugins "${VLCROOT}" "$(pwd)" "${PREFIX}/lib/vlc/plugins" || exit 1
++
+     spopd
+ }
+ 

@@ -1,6 +1,9 @@
 # What the desktop libVLC builds (tools/libvlc-windows, tools/libvlc-linux) share, sourced inside their containers with
 # $vlc (VLC's tree), $patches (what it holds, one to a line) and $jobs set: VLC's sources at a commit with the patches,
-# its contribs fetched, and the scan that keeps every module built from a GPL source out of what ships.
+# its contribs fetched, and the scan that keeps every module built from a GPL source out of what ships (gpl.sh, which
+# VLCKit's build sources too).
+
+. /tools/vlc/gpl.sh
 
 # Each patch must be in VLC as it is here, not only by its Message-Id: a volume cloned before a patch was added or
 # changed never applies it again.
@@ -61,40 +64,15 @@ refuse_gpl_contribs() {
   done
 }
 
-# A file is GPL when it names the GPL and neither the LGPL nor the GNU Library GPL.
-is_gpl() {
-  [ -f "$1" ] && grep -q -E 'GNU General Public License|GNU GPL' "$1" && ! grep -q -E 'Lesser General Public|Library General Public|LGPL' "$1"
-}
-
-# The sources a library in modules/ is made from, its in-tree convenience libraries' included; run in the build's folder.
-sources_of() {
-  canonical="$(echo "$1" | sed 's/[^a-zA-Z0-9_]/_/g')"
-  vars="$(make -s -C modules -f Makefile -f /dev/stdin print <<MAKE
-print: ; @echo \$(${canonical}_SOURCES) \$(nodist_${canonical}_SOURCES) '|' \$(${canonical}_LIBADD)
-MAKE
-)"
-  for source in ${vars%%|*}; do
-    echo "$vlc/modules/$source"
-  done
-  for lib in ${vars#*|}; do
-    case "$lib" in
-      *.la) [ "$(basename "$lib")" = "$lib" ] && sources_of "$lib" ;;
-    esac
-  done
-}
-
 # Copies every plugin of folder $1 that no GPL source is in to folder $2, naming the ones left out; .$3 is their extension.
 copy_lgpl_plugins() {
   left_out=""
   for plugin in "$1"/*/*."$3"; do
     name="$(basename "$plugin" ".$3")"
-    gpl=""
-    for source in $(sources_of "$name.la"); do
-      is_gpl "$source" && gpl="$gpl ${source#"$vlc"/}"
-    done
+    gpl="$(gpl_sources_of "$vlc" "$PWD" "$name" | tr '\n' ' ')"
     if [ -n "$gpl" ]; then
       left_out="$left_out
-  $name:$gpl"
+  $name: $gpl"
       continue
     fi
     mkdir -p "$2/$(basename "$(dirname "$plugin")")"
@@ -103,14 +81,13 @@ copy_lgpl_plugins() {
   echo "Left out, as built from GPL sources:$left_out"
 }
 
-# Stops where libvlc or libvlccore is made from a GPL source; run in the build's folder.
+# Stops where libvlc or libvlccore is made from a GPL source.
 refuse_gpl_core() {
-  for source in $(cd "$vlc" && ls src/*.c src/*/*.c lib/*.c); do
-    if is_gpl "$vlc/$source"; then
-      echo "libvlccore or libvlc is built from $source, which is GPL" >&2
-      exit 1
-    fi
-  done
+  core="$(gpl_core_sources "$vlc")"
+  if [ -n "$core" ]; then
+    echo "libvlccore or libvlc is built from GPL sources: $core" >&2
+    exit 1
+  fi
 }
 
 # Stops where any of the binaries given holds GPL code, by what that code says of itself.
